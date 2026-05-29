@@ -25,9 +25,14 @@ int main(void) {
     printf("Terminal size: %u x %u\n", w, h);
 
     unsigned rotation = 0;
+    float x = 0;
     for (unsigned i = 0; i < 100; i++) {
+        ratUpdateSimple(flower, x, 0);
         ratUpdateRot(flower, 90, rotation, 0);
+
+        x += 0.5;
         rotation += 15;
         sleepM(33);
     }
+    ratDeleteAll();
 }

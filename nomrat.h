@@ -12,16 +12,19 @@
 void rat_internal_pre() { printf("\x1b_ratty;g;"); }
 void rat_internal_post() { printf("\x1b\\"); fflush(stdout); }
 
-char *objects[RAT_OBJ_LIMIT];
+char *rat_internal_objects[RAT_OBJ_LIMIT];
+unsigned rat_internal_w=1, rat_internal_h=1;
 
 void ratGetWH(unsigned *w, unsigned *h) {
     struct winsize wi;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &wi);
     *w = wi.ws_col;
     *h = wi.ws_row;
+    rat_internal_w = wi.ws_col;
+    rat_internal_h = wi.ws_row;
 }
 #define NOMRAT_CHECK_ID(_id)\
-if (_id >= RAT_OBJ_LIMIT || objects[_id] == NULL)\
+if (_id >= RAT_OBJ_LIMIT || rat_internal_objects[_id] == NULL)\
     { fprintf(stderr, "NomRat Error: Unknown ID %u\n", _id); exit(1); } \
 
 
@@ -33,8 +36,8 @@ unsigned ratRegister(char *path, char *fmt) {
     _Bool obj_limit_reached = 1;
     unsigned retval = 0;
     for (unsigned i = 0; i < RAT_OBJ_LIMIT; i++) {
-        if (objects[i] == NULL) {
-            objects[i] = path;
+        if (rat_internal_objects[i] == NULL) {
+            rat_internal_objects[i] = path;
             retval = i;
             obj_limit_reached = 0;
             break;
@@ -57,29 +60,37 @@ void ratPlace(unsigned id, unsigned x, unsigned y, unsigned w, unsigned h) {
     rat_internal_post();
 }
 
+// Note: According to Ratty:
+//       1 unit in the x axis = 1 screen width
+//       1 unit in the y axis = 1 screen height
+//       1 unit in the z axis = Ratty hardcodes them internally
+//              (though, for reference by default the screen is at depth 18,
+//              so probably keep any total z displacement to <18)
+// But this interface takes care that 1 unit = 1 character for the xy plane, the z axis is left untouched
+void ratUpdatePos(unsigned id, float px, float py, float pz) {
+    NOMRAT_CHECK_ID(id);
+    rat_internal_pre();
+    printf("u;id=%u;px=%f;py=%f;pz=%f", id, px/rat_internal_w, py/rat_internal_h, pz);
+    rat_internal_post();
+}
 void ratUpdateSimple(unsigned id, unsigned px, unsigned py) {
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
-    printf("u;id=%u;px=%u;py=%u", id, px, py);
+    printf("u;id=%u;px=%f;py=%f", id, ((float)px)/rat_internal_w, ((float)py)/rat_internal_h);
     rat_internal_post();
 }
-void ratUpdatePos(unsigned id, unsigned px, unsigned py, unsigned pz) {
-    NOMRAT_CHECK_ID(id);
-    rat_internal_pre();
-    printf("u;id=%u;px=%u;py=%u;pz=%u", id, px, py, pz);
-    rat_internal_post();
-}
-void ratUpdateRot(unsigned id, unsigned rx, unsigned ry, unsigned rz) {
+
+void ratUpdateRot(unsigned id, float rx, float ry, float rz) {
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
     /*Rotation in degrees*/
-    printf("u;id=%u;rx=%u;ry=%u;rz=%u", id, rx, ry, rz);
+    printf("u;id=%u;rx=%f;ry=%f;rz=%f", id, rx, ry, rz);
     rat_internal_post();
 }
-void ratUpdateScale(unsigned id, unsigned sx, unsigned sy, unsigned sz) {
+void ratUpdateScale(unsigned id, float sx, float sy, float sz) {
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
-    printf("u;id=%u;sx=%u;sy=%u;sz=%u", id, sx, sy, sz);
+    printf("u;id=%u;sx=%f;sy=%f;sz=%f", id, sx, sy, sz);
     rat_internal_post();
 }
 void ratUpdateColorBrightness(unsigned id, uint32_t c, float brightness) {
@@ -98,14 +109,14 @@ void ratUpdateDepth(unsigned id, float depth) {
 
 void ratDelete(unsigned id) {
     if (id < RAT_OBJ_LIMIT)
-        objects[id] = NULL;
+        rat_internal_objects[id] = NULL;
     rat_internal_pre();
     printf("d;id=%u", id);
     rat_internal_post();
 }
 void ratDeleteAll(void) {
     for (unsigned i = 0; i < RAT_OBJ_LIMIT; i++)
-        objects[i] = NULL;
+        rat_internal_objects[i] = NULL;
     rat_internal_pre();
     printf("d");
     rat_internal_post();
