@@ -10,7 +10,7 @@
 #define RAT_OBJ_LIMIT 1024
 
 void rat_internal_pre() { printf("\x1b_ratty;g;"); }
-void rat_internal_post() { printf("\x1b\\"); }
+void rat_internal_post() { printf("\x1b\\"); fflush(stdout); }
 
 char *objects[RAT_OBJ_LIMIT];
 
@@ -25,7 +25,7 @@ if (_id >= RAT_OBJ_LIMIT || objects[_id] == NULL)\
     { fprintf(stderr, "NomRat Error: Unknown ID %u\n", _id); exit(1); } \
 
 
-void ratClear(void) { printf("\x1b[2J"); }
+void ratClear(void) { printf("\x1b[2J"); fflush(stdout); }
 
 void ratSetXY(unsigned x, unsigned y) { printf("\x1b[%u;%uH", y, x); fflush(stdout); }
 
