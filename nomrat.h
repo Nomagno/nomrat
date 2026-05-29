@@ -4,6 +4,7 @@
 #include <sys/ioctl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 
 #define RAT_OBJ_LIMIT 1024
@@ -19,6 +20,10 @@ void ratGetWH(unsigned *w, unsigned *h) {
     *w = wi.ws_col;
     *h = wi.ws_row;
 }
+#define NOMRAT_CHECK_ID(_id)\
+if (_id >= RAT_OBJ_LIMIT || objects[_id] == NULL)\
+    { fprintf(stderr, "NomRat Error: Unknown ID %u\n", _id); exit(1); } \
+
 
 void ratClear(void) { printf("\x1b[2J"); }
 
@@ -46,34 +51,48 @@ unsigned ratRegister(char *path, char *fmt) {
 }
 
 void ratPlace(unsigned id, unsigned x, unsigned y, unsigned w, unsigned h) {
-    if (id >= RAT_OBJ_LIMIT || objects[id] == NULL) {
-        fprintf(stderr, "NomRat Error: Unregistered/deregistered ID %u\n", id);
-        exit(1);
-    }
+    NOMRAT_CHECK_ID(id);
     rat_internal_pre();
     printf("p;id=%u;row=%u;col=%u;w=%u;h=%u", id, y, x, w, h);
     rat_internal_post();
 }
 
-void ratUpdateFull(unsigned id, unsigned px, unsigned py, unsigned pz, unsigned rx, unsigned ry, unsigned rz) {
-    if (id >= RAT_OBJ_LIMIT || objects[id] == NULL) {
-        fprintf(stderr, "NomRat Error: Unregistered/deregistered ID %u\n", id);
-        exit(1);
-    }
+void ratUpdateSimple(unsigned id, unsigned px, unsigned py) {
+    NOMRAT_CHECK_ID(id);
     rat_internal_pre();
-    // Rotation in degrees
-    printf("u;id=%u;px=%u;py=%u;pz=%u;rx=%u;ry=%u;rz=%u", id, px, py, pz, rx, ry, rz);
+    printf("u;id=%u;px=%u;py=%u", id, px, py);
     rat_internal_post();
 }
-
-void ratUpdate(unsigned id, unsigned px, unsigned py) {
-    if (id >= RAT_OBJ_LIMIT || objects[id] == NULL) {
-        fprintf(stderr, "NomRat Error: Unregistered/deregistered ID %u\n", id);
-        exit(1);
-    }
+void ratUpdatePos(unsigned id, unsigned px, unsigned py, unsigned pz) {
+    NOMRAT_CHECK_ID(id);
     rat_internal_pre();
-    // Rotation in degrees
-    printf("u;id=%u;px=%u;py=%u", id, px, py);
+    printf("u;id=%u;px=%u;py=%u;pz=%u", id, px, py, pz);
+    rat_internal_post();
+}
+void ratUpdateRot(unsigned id, unsigned rx, unsigned ry, unsigned rz) {
+    NOMRAT_CHECK_ID(id);
+    rat_internal_pre();
+    /*Rotation in degrees*/
+    printf("u;id=%u;rx=%u;ry=%u;rz=%u", id, rx, ry, rz);
+    rat_internal_post();
+}
+void ratUpdateScale(unsigned id, unsigned sx, unsigned sy, unsigned sz) {
+    NOMRAT_CHECK_ID(id);
+    rat_internal_pre();
+    printf("u;id=%u;sx=%u;sy=%u;sz=%u", id, sx, sy, sz);
+    rat_internal_post();
+}
+void ratUpdateColorBrightness(unsigned id, uint32_t c, float brightness) {
+    NOMRAT_CHECK_ID(id);
+    rat_internal_pre();
+    c = c & 0x00FFFFFF; /*Only lower 24 bits used*/
+    printf("u;id=%u;color=%.6x;brightness=%f", id, c, brightness);
+    rat_internal_post();
+}
+void ratUpdateDepth(unsigned id, float depth) {
+    NOMRAT_CHECK_ID(id);
+    rat_internal_pre();
+    printf("u;id=%u;depth=%f", id, depth);
     rat_internal_post();
 }
 
@@ -81,10 +100,9 @@ void ratDelete(unsigned id) {
     if (id < RAT_OBJ_LIMIT)
         objects[id] = NULL;
     rat_internal_pre();
-    printf("d;id=%u;", id);
+    printf("d;id=%u", id);
     rat_internal_post();
 }
-
 void ratDeleteAll(void) {
     for (unsigned i = 0; i < RAT_OBJ_LIMIT; i++)
         objects[i] = NULL;

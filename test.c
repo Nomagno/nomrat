@@ -10,6 +10,8 @@ int main(void) {
 
     ratClear();
     ratSetXY(0, 0);
-    ratPlace(flower, 5, 5, 50, 50);
+
+    ratPlace(flower, 10, 10, 5, 5);
+    ratUpdateRot(flower, 90, 0, 0);
     printf("Terminal size: %u x %u\n", w, h);
 }
