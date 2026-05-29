@@ -27,7 +27,7 @@ if (_id >= RAT_OBJ_LIMIT || objects[_id] == NULL)\
 
 void ratClear(void) { printf("\x1b[2J"); }
 
-void ratSetXY(unsigned x, unsigned y) { printf("\x1b[%u;%uH", y, x); }
+void ratSetXY(unsigned x, unsigned y) { printf("\x1b[%u;%uH", y, x); fflush(stdout); }
 
 unsigned ratRegister(char *path, char *fmt) {
     _Bool obj_limit_reached = 1;
