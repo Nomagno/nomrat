@@ -9,14 +9,17 @@ void sleepM(unsigned ms) {
     nanosleep(&ts, NULL);
 }
 
-int main(void) {
-    ratDeleteAll();
+// !!! MODIFY THIS WITH YOUR PATH TO nomrat ASSETS
+#define PATH(_x) "~/path/to/nomrat/assets/objects/" _x
 
-    unsigned flower = ratRegister("flower.glb", "glb");
+int main(void) {
+    ratClearObjects();
+
+    unsigned flower = ratRegister(PATH("flower.glb"), "glb");
     unsigned w, h;
     ratGetWH(&w, &h);
 
-    ratClear();
+    ratClearText();
     ratSetXY(0, 0);
 
     ratPlace(flower, 10, 10, 5, 5);
@@ -26,7 +29,7 @@ int main(void) {
 
     unsigned rotation = 0;
     float x = 0;
-    for (unsigned i = 0; i < 100; i++) {
+    for (unsigned i = 0; i < 300; i++) {
         ratUpdateSimple(flower, x, 0);
         ratUpdateRot(flower, 90, rotation, 0);
 
@@ -34,5 +37,5 @@ int main(void) {
         rotation += 15;
         sleepM(33);
     }
-    ratDeleteAll();
+    ratClearObjects();
 }
