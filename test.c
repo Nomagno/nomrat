@@ -22,18 +22,20 @@ int main(void) {
     ratClearText();
     ratSetXY(0, 0);
 
-    ratPlace(flower, 10, 10, 5, 5);
+    ratPlace(flower, 0, 0, 5, 5);
     ratUpdateRot(flower, 90, 0, 0);
 
     printf("Terminal size: %u x %u\n", w, h);
 
     unsigned rotation = 0;
     float x = 0;
+    float y = 0;
     for (unsigned i = 0; i < 300; i++) {
-        ratUpdateSimple(flower, x, 0);
+        ratUpdateSimpleF(flower, x, y);
         ratUpdateRot(flower, 90, rotation, 0);
 
         x += 0.5;
+        y -= 0.2;
         rotation += 15;
         sleepM(33);
     }

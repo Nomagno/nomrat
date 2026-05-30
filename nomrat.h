@@ -8,15 +8,20 @@
 #include <unistd.h>
 
 #define RAT_OBJ_LIMIT 1024
+#define NOMRAT_CHECK_ID(_id)\
+if (_id >= RAT_OBJ_LIMIT || rat_internal_objects[_id] == NULL)\
+    { fprintf(stderr, "NomRat Error: Unknown ID %u\n", _id); exit(1); } \
 
 void rat_internal_pre() { printf("\x1b_ratty;g;"); }
 void rat_internal_post() { printf("\x1b\\"); fflush(stdout); }
-
 char *rat_internal_objects[RAT_OBJ_LIMIT];
 unsigned rat_internal_w=1, rat_internal_h=1;
 
-// It is recommended to call this at least once
-// for the internal terminal size parameters to be filled in
+// Stores the terminal width in columns into w,
+// and the height in rows into h.
+// It is recommended to call this at program startup
+// for the internal nomrat terminal dimenstions to be
+// filled in
 void ratGetWH(unsigned *w, unsigned *h) {
     struct winsize wi;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &wi);
@@ -25,13 +30,6 @@ void ratGetWH(unsigned *w, unsigned *h) {
     rat_internal_w = wi.ws_col;
     rat_internal_h = wi.ws_row;
 }
-#define NOMRAT_CHECK_ID(_id)\
-if (_id >= RAT_OBJ_LIMIT || rat_internal_objects[_id] == NULL)\
-    { fprintf(stderr, "NomRat Error: Unknown ID %u\n", _id); exit(1); } \
-
-
-// Clears screen (just the text)
-void ratClearText(void) { printf("\x1b[2J"); fflush(stdout); }
 
 // Deletes ALL objects
 void ratClearObjects(void) {
@@ -42,14 +40,15 @@ void ratClearObjects(void) {
     rat_internal_post();
 }
 
+// Clears screen (text)
+void ratClearText(void) { printf("\x1b[2J"); fflush(stdout); }
 
 // Sets cursor position
 void ratSetXY(unsigned x, unsigned y) { printf("\x1b[%u;%uH", y, x); fflush(stdout); }
 
 // Registers object with path (path relative to ratty's assets/objects/ folder, absolute paths not supported)
-//  and where format is one of "obj", "glb"
-// Returns the integer handle (ID) of the object
-// for use with the rest of commands
+// and where format is one of "obj", "glb".
+// Returns the integer handle (ID) of the object for use with the rest of commands
 unsigned ratRegister(char *path, char *fmt) {
     _Bool obj_limit_reached = 1;
     unsigned retval = 0;
@@ -98,7 +97,15 @@ void ratUpdatePos(unsigned id, float px, float py, float pz) {
 void ratUpdateSimple(unsigned id, int px, int py) {
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
-    printf("u;id=%u;px=%f;py=%f", id, ((float)px)/(float)rat_internal_w, ((float)py)/(float)rat_internal_h);
+    printf("u;id=%u;px=%f;py=%f", id, ((float)px)/rat_internal_w, ((float)py)/rat_internal_h);
+    rat_internal_post();
+}
+
+// Updates position of object, float xy plane version for smooth movement
+void ratUpdateSimpleF(unsigned id, float px, float py) {
+    NOMRAT_CHECK_ID(id);
+    rat_internal_pre();
+    printf("u;id=%u;px=%f;py=%f", id, px/(float)rat_internal_w, py/(float)rat_internal_h);
     rat_internal_post();
 }
 
@@ -127,8 +134,7 @@ void ratUpdateColorBrightness(unsigned id, uint32_t c, float brightness) {
     rat_internal_post();
 }
 
-// Updates the depth offset (Seems to be bugged in Ratty at the moment,
-//                            not clear how it's different from the z offset )
+// Updates the depth offset
 void ratUpdateDepth(unsigned id, float depth) {
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
