@@ -150,4 +150,33 @@ void ratDelete(unsigned id) {
     printf("d;id=%u", id);
     rat_internal_post();
 }
+
+/*
+// Feature not in mainline ratty yet
+// Updates the clipping plane and enables clipping
+void ratUpdateClipping(unsigned id, unsigned x, unsigned y, unsigned w, unsigned h) {
+    NOMRAT_CHECK_ID(id);
+    rat_internal_pre();
+    printf("u;id=%u;clip=1;clip_row=%u;clip_col=%u;clip_w=%u;clip_h=%u", id, x, y, w, h);
+    rat_internal_post();
+}
+// Feature not in mainline ratty yet
+// Disables clipping
+void ratUpdateNoClip(unsigned id) {
+    NOMRAT_CHECK_ID(id);
+    rat_internal_pre();
+    printf("u;id=%u;clip=0", id);
+    rat_internal_post();
+}
+
+// Feature idea not implemented in ratty for now
+// Make object tied to the current terminal row,column of
+// its anchor instead of to the terminal cell itself
+void raUpdatePersistent(unsigned id, _Bool persistent) {
+    NOMRAT_CHECK_ID(id);
+    rat_internal_pre();
+    printf("u;id=%u;persistent=%u", persistent);
+    rat_internal_post();
+}
+*/
 #endif
