@@ -109,6 +109,14 @@ void ratUpdateSimpleF(unsigned id, float px, float py) {
     rat_internal_post();
 }
 
+// Updates depth offset of object
+void ratUpdateZ(unsigned id, float pz) {
+    NOMRAT_CHECK_ID(id);
+    rat_internal_pre();
+    printf("u;id=%u;pz=%f", id, pz);
+    rat_internal_post();
+}
+
 // Updates rotation of object, where the rotation is in degrees
 void ratUpdateRot(unsigned id, float rx, float ry, float rz) {
     NOMRAT_CHECK_ID(id);
