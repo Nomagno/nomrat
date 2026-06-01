@@ -12,10 +12,14 @@
 if (_id >= RAT_OBJ_LIMIT || rat_internal_objects[_id] == NULL)\
     { fprintf(stderr, "NomRat Error: Unknown ID %u\n", _id); exit(1); } \
 
-void rat_internal_pre() { printf("\x1b_ratty;g;"); }
-void rat_internal_post() { printf("\x1b\\"); fflush(stdout); }
 char *rat_internal_objects[RAT_OBJ_LIMIT];
 unsigned rat_internal_w=1, rat_internal_h=1;
+
+// Can be set to 1 in order to not force flush. reset when ratForce() is called.
+_Bool defer_commands = 0;
+
+void rat_internal_pre() { printf("\x1b_ratty;g;"); }
+void rat_internal_post() { printf("\x1b\\"); if (!defer_commands) fflush(stdout); }
 
 // Stores the terminal width in columns into w,
 // and the height in rows into h.
@@ -41,10 +45,10 @@ void ratClearObjects(void) {
 }
 
 // Clears screen (text)
-void ratClearText(void) { printf("\x1b[2J"); fflush(stdout); }
+void ratClearText(void) { printf("\x1b[2J"); if (!defer_commands) fflush(stdout); }
 
 // Sets cursor position
-void ratSetXY(unsigned x, unsigned y) { printf("\x1b[%u;%uH", y, x); fflush(stdout); }
+void ratSetXY(unsigned x, unsigned y) { printf("\x1b[%u;%uH", y, x); if (!defer_commands) fflush(stdout); }
 
 // Registers object with path (path relative to ratty's assets/objects/ folder, absolute paths not supported)
 // and where format is one of "obj", "glb".
@@ -76,6 +80,21 @@ void ratPlace(unsigned id, unsigned x, unsigned y, unsigned w, unsigned h) {
     rat_internal_pre();
     printf("p;id=%u;row=%u;col=%u;w=%u;h=%u", id, y, x, w, h);
     rat_internal_post();
+}
+
+// Deletes object
+void ratDelete(unsigned id) {
+    if (id < RAT_OBJ_LIMIT)
+        rat_internal_objects[id] = NULL;
+    rat_internal_pre();
+    printf("d;id=%u", id);
+    rat_internal_post();
+}
+
+// Forces all accumulated commands to be sent
+void ratForce(void) {
+    defer_commands = 0;
+    fflush(stdout);
 }
 
 // Note: According to Ratty:
@@ -177,14 +196,6 @@ void ratCameraType(unsigned id, char *type) {
 void ratCameraSet(unsigned id) {
     rat_internal_pre();
     printf("c;id=%u;set=1", id);
-    rat_internal_post();
-}
-// Deletes object
-void ratDelete(unsigned id) {
-    if (id < RAT_OBJ_LIMIT)
-        rat_internal_objects[id] = NULL;
-    rat_internal_pre();
-    printf("d;id=%u", id);
     rat_internal_post();
 }
 
