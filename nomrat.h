@@ -150,6 +150,35 @@ void ratUpdateDepth(unsigned id, float depth) {
     rat_internal_post();
 }
 
+void ratCameraPos(unsigned id, float px, float py, float pz) {
+    rat_internal_pre();
+    printf("c;id=%u;px=%f;py=%f;pz=%f", id, px, py, pz);
+    rat_internal_post();
+}
+
+void ratCameraRot(unsigned id, float rx, float ry, float rz) {
+    rat_internal_pre();
+    printf("c;id=%u;rx=%f;ry=%f;rz=%f", id, rx, ry, rz);
+    rat_internal_post();
+}
+
+void ratCameraScale(unsigned id, float scale) {
+    rat_internal_pre();
+    printf("c;id=%u;scale=%f", id, scale);
+    rat_internal_post();
+}
+
+void ratCameraType(unsigned id, char *type) {
+    rat_internal_pre();
+    printf("c;id=%u;type=%s", id, type);
+    rat_internal_post();
+}
+
+void ratCameraSet(unsigned id) {
+    rat_internal_pre();
+    printf("c;id=%u;set=1", id);
+    rat_internal_post();
+}
 // Deletes object
 void ratDelete(unsigned id) {
     if (id < RAT_OBJ_LIMIT)
