@@ -34,35 +34,82 @@ void setNonblockingInput(_Bool enable) {
     }
 }
 
+void startGame(void) {
+    setNonblockingInput(1);
+    setRawMode(1);
+    ratClearObjects();
+    ratClearText();
+    ratSetXY(0, 0);
+}
+
+void endGame(void) {
+    setNonblockingInput(0);
+    setRawMode(0);
+    ratClearObjects();
+    ratClearText();
+}
+
+unsigned char read_buffer[64];
+unsigned readInput(void) {
+    return fread(read_buffer, 1, 64, stdin);
+}
+
 // !!! MODIFY THIS WITH YOUR PATH TO nomrat ASSETS
 #define PATH(_x) "~/path/to/nomrat/assets/objects/" _x
 
+unsigned real_width, real_height;
+unsigned game_width=24, game_height=80;
+
 int main(void) {
-    ratClearObjects();
+    startGame();
+    ratGetWH(&real_width, &real_height);
 
     unsigned flower = ratRegister(PATH("flower.glb"), "glb");
-    unsigned w, h;
-    ratGetWH(&w, &h);
-
-    ratClearText();
-    ratSetXY(0, 0);
-
-    ratPlace(flower, 0, 0, 5, 5);
+    ratPlace(flower, 3, 3, 4, 4);
     ratUpdateRot(flower, 90, 0, 0);
 
-    printf("Terminal size: %u x %u\n", w, h);
+    printf("Terminal size: %u x %u. W,A,S,D: 2D movement; Q,E: 3D movement; B: quit\n", real_width, real_height);
 
     unsigned rotation = 0;
     float x = 0;
     float y = 0;
-    for (unsigned i = 0; i < 300; i++) {
-        ratUpdateSimpleF(flower, x, y);
-        ratUpdateRot(flower, 90, rotation, 0);
+    float z = 0;
 
-        x += 0.5;
-        y -= 0.2;
+    _Bool game_active = 1;
+    while(game_active) {
+        ratUpdateSimpleF(flower, x, y);
+        ratUpdateZ(flower, z);
+        ratUpdateRot(flower, 90, rotation, 0);
+        if (readInput()) switch(read_buffer[0]){
+        case 'a':
+            x -= 1;
+            break;
+        case 'd':
+            x += 1;
+            break;
+        case 'w':
+            y += 1;
+            break;
+        case 's':
+            y -= 1;
+            break;
+        case 'q':
+            z -= 5;
+            break;
+        case 'e':
+            z += 5;
+            break;
+        case 'b':
+            game_active = 0;
+            continue;
+            break;
+        default:
+            break;
+        }
+
         rotation += 15;
         sleepM(33);
     }
-    ratClearObjects();
+
+    endGame();
 }
