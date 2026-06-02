@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#define RAT_OBJ_LIMIT 1024
+#define RAT_OBJ_LIMIT 64
 #define NOMRAT_CHECK_ID(_id)\
 if (_id >= RAT_OBJ_LIMIT || rat_internal_objects[_id] == NULL)\
     { fprintf(stderr, "NomRat Error: Unknown ID %u\n", _id); exit(1); } \
@@ -97,14 +97,9 @@ void ratForce(void) {
     fflush(stdout);
 }
 
-// Note: According to Ratty:
-//       1 unit in the x axis = 1 screen width
-//       1 unit in the y axis = 1 screen height
-//       1 unit in the z axis = Ratty hardcodes them internally
-//              (though, for reference by default the screen is at depth 18,
-//              so probably keep any total z displacement to <18)
-// But this interface takes care that 1 unit = 1 character for the xy plane, the z axis is left untouched
 // Updates position OFFSET of object. That is, the offset from its original position
+// XY: in columns/rows
+// Z: custom unit, seemingly 1 Y-axis unit is roughly equal to 5 Z-axis units with the default font at fullscreen 1080p
 void ratUpdatePos(unsigned id, float px, float py, float pz) {
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
@@ -169,30 +164,39 @@ void ratUpdateDepth(unsigned id, float depth) {
     rat_internal_post();
 }
 
+// Changes the selected camera slot's offset to the center of the terminal plane
+// In the case of Flat mode, it's ignored
 void ratCameraPos(unsigned id, float px, float py, float pz) {
     rat_internal_pre();
     printf("c;id=%u;px=%f;py=%f;pz=%f", id, px, py, pz);
     rat_internal_post();
 }
 
+// Changes the selected camera slot's rotation. ry currently ignored as only pitch and yaw are supported, not roll
+// In the case of Flat mode, it's ignored
 void ratCameraRot(unsigned id, float rx, float ry, float rz) {
     rat_internal_pre();
     printf("c;id=%u;rx=%f;ry=%f;rz=%f", id, rx, ry, rz);
     rat_internal_post();
 }
 
+// In the case of Ortho/Mobius mode, changes the zoom.
+// In the case of Persp mode, changes the FOV.
+// In the case of Flat mode, it's ignored
 void ratCameraScale(unsigned id, float scale) {
     rat_internal_pre();
     printf("c;id=%u;scale=%f", id, scale);
     rat_internal_post();
 }
 
+// Sets the camera type, where type is one of: Flat, Ortho, Persp, Mobius
 void ratCameraType(unsigned id, char *type) {
     rat_internal_pre();
     printf("c;id=%u;type=%s", id, type);
     rat_internal_post();
 }
 
+// Instantly copies the current camera slot's settings to Ratty's current camera settings.
 void ratCameraSet(unsigned id) {
     rat_internal_pre();
     printf("c;id=%u;set=1", id);
