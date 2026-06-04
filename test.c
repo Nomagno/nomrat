@@ -71,6 +71,8 @@ unsigned readInput(void) {
 #define FEQUAL(_x, _y) (ABS(_x) - ABS(_y) < EPSILON)
 
 int main(void) {
+    startGame();
+
     ratGetWH(&w, &h, &pw, &ph);
     char_ratio = (float)(ph/h)/(float)(pw/w);
 
@@ -78,8 +80,6 @@ int main(void) {
            "W,A,S,D: 2D movement; Q,E: 3D movement; B: quit\n",
            w, h, pw, ph, char_ratio);
     assert(FEQUAL(char_ratio, 2.0) && "Error: Y axis must be close to twice the size of X axis in order for games to provide a consistent visual experience");
-
-    startGame();
 
     for (unsigned i = 0; i < h-5; i++) {
         for (unsigned  j = 0; j < w; j++) {
