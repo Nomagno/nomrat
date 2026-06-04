@@ -13,7 +13,8 @@ if (_id >= RAT_OBJ_LIMIT || rat_internal_objects[_id] == NULL)\
     { fprintf(stderr, "NomRat Error: Unknown ID %u\n", _id); exit(1); } \
 
 char *rat_internal_objects[RAT_OBJ_LIMIT];
-unsigned rat_internal_w=1, rat_internal_h=1;
+unsigned rat_internal_w=1, rat_internal_h=1; // Width, height in characters
+unsigned rat_internal_pw=1, rat_internal_ph=1; // Width, height in pixels
 
 // Can be set to 1 in order to not force flush. reset when ratForce() is called.
 _Bool defer_commands = 0;
@@ -23,16 +24,23 @@ void rat_internal_post() { printf("\x1b\\"); if (!defer_commands) fflush(stdout)
 
 // Stores the terminal width in columns into w,
 // and the height in rows into h.
+// Stores the terminal width and height in pixels into pw and ph.
 // It is recommended to call this at program startup
-// for the internal nomrat terminal dimenstions to be
-// filled in
-void ratGetWH(unsigned *w, unsigned *h) {
+// for the internal nomrat terminal dimenstions to be filled in.
+void ratGetWH(unsigned *w, unsigned *h, unsigned *pw, unsigned *ph) {
     struct winsize wi;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &wi);
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &wi) != 0) {
+        fprintf(stderr, "NomRat Error: Can't get terminal and window size\n");
+        exit(1);
+    }
     *w = wi.ws_col;
     *h = wi.ws_row;
-    rat_internal_w = wi.ws_col;
-    rat_internal_h = wi.ws_row;
+    *pw = wi.ws_xpixel;
+    *ph = wi.ws_ypixel;
+    rat_internal_w = *w;
+    rat_internal_h = *h;
+    rat_internal_pw = *pw;
+    rat_internal_ph = *ph;
 }
 
 // Deletes ALL objects

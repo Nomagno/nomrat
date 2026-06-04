@@ -34,9 +34,17 @@ void setNonblockingInput(_Bool enable) {
     }
 }
 
+// !!! MODIFY THIS WITH YOUR PATH TO nomrat ASSETS
+#define PATH(_x) "~/Documents/Git/nomrat/assets/objects/" _x
+
+// Terminal size
+unsigned w, h;
+// Size in pixels of the terminal
+unsigned pw, ph;
+
 void startGame(void) {
-    setNonblockingInput(1);
     setRawMode(1);
+    setNonblockingInput(1);
     ratClearObjects();
     ratClearText();
     ratSetXY(0, 0);
@@ -54,21 +62,33 @@ unsigned readInput(void) {
     return fread(read_buffer, 1, 64, stdin);
 }
 
-// !!! MODIFY THIS WITH YOUR PATH TO nomrat ASSETS
-#define PATH(_x) "~/path/to/nomrat/assets/objects/" _x
-
-unsigned real_width, real_height;
-unsigned game_width=24, game_height=80;
-
 int main(void) {
     startGame();
-    ratGetWH(&real_width, &real_height);
+    ratGetWH(&w, &h, &pw, &ph);
 
-    unsigned flower = ratRegister(PATH("flower.glb"), "glb");
-    ratPlace(flower, 3, 3, 4, 4);
-    ratUpdateRot(flower, 90, 0, 0);
+    printf("Terminal size in cells: %u x %u.\n"
+           "Terminal size in pixels: %u x %u\n"
+           "W,A,S,D: 2D movement; Q,E: 3D movement; B: quit\n",
+           w, h, pw, ph);
 
-    printf("Terminal size: %u x %u. W,A,S,D: 2D movement; Q,E: 3D movement; B: quit\n", real_width, real_height);
+    for (unsigned i = 0; i < h-5; i++) {
+        for (unsigned  j = 0; j < w; j++) {
+            printf(" ");
+        }
+        printf("\n");
+     }
+
+
+    #define FLOWER_C 64
+    unsigned flowers[FLOWER_C];
+    defer_commands = 1;
+    for (unsigned i = 0; i < FLOWER_C; i++) {
+        flowers[i] = ratRegister(PATH("flower.glb"), "glb");
+        ratPlace(flowers[i], 3 + (i%16)*3, 5 + (i/16)*3, 4, 4);
+        ratUpdateRot(flowers[i], 90, 0, 0);
+    }
+    ratForce();
+
 
     unsigned rotation = 0;
     float x = 0;
@@ -77,9 +97,13 @@ int main(void) {
 
     _Bool game_active = 1;
     while(game_active) {
-        ratUpdateSimpleF(flower, x, y);
-        ratUpdateZ(flower, z);
-        ratUpdateRot(flower, 90, rotation, 0);
+        defer_commands = 1;
+        for (unsigned i = 0; i < FLOWER_C; i++) {
+            ratUpdateSimpleF(flowers[i], x, y);
+            ratUpdateZ(flowers[i], z);
+            ratUpdateRot(flowers[i], 90, rotation, 0);
+        }
+        ratForce();
         if (readInput()) switch(read_buffer[0]){
         case 'a':
             x -= 1;
