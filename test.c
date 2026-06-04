@@ -2,6 +2,7 @@
 #include <time.h>
 #include <termios.h>
 #include <fcntl.h>
+#include <assert.h>
 #include "nomrat.h"
 
 void sleepM(unsigned ms) {
@@ -41,6 +42,9 @@ void setNonblockingInput(_Bool enable) {
 unsigned w, h;
 // Size in pixels of the terminal
 unsigned pw, ph;
+// visually, Y = ratio*X. If ratio is 2.0 (this is the case in most termials),
+// this means that the Y axis is visually twice as large as the X axis.
+float char_ratio;
 
 void startGame(void) {
     setRawMode(1);
@@ -62,14 +66,20 @@ unsigned readInput(void) {
     return fread(read_buffer, 1, 64, stdin);
 }
 
-int main(void) {
-    startGame();
-    ratGetWH(&w, &h, &pw, &ph);
+#define EPSILON 0.1
+#define ABS(_x) ((_x < 0) ? -_x : _x)
+#define FEQUAL(_x, _y) (ABS(_x) - ABS(_y) < EPSILON)
 
-    printf("Terminal size in cells: %u x %u.\n"
-           "Terminal size in pixels: %u x %u\n"
+int main(void) {
+    ratGetWH(&w, &h, &pw, &ph);
+    char_ratio = (float)(ph/h)/(float)(pw/w);
+
+    printf("Terminal size in cells; pixels: %ux%u; %ux%u. Ratio: %0.4f\n"
            "W,A,S,D: 2D movement; Q,E: 3D movement; B: quit\n",
-           w, h, pw, ph);
+           w, h, pw, ph, char_ratio);
+    assert(FEQUAL(char_ratio, 2.0) && "Error: Y axis must be close to twice the size of X axis in order for games to provide a consistent visual experience");
+
+    startGame();
 
     for (unsigned i = 0; i < h-5; i++) {
         for (unsigned  j = 0; j < w; j++) {
