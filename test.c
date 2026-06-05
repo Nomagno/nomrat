@@ -1,98 +1,28 @@
 #include <stdio.h>
-#include <time.h>
-#include <termios.h>
-#include <fcntl.h>
-#include <assert.h>
 #include "nomrat.h"
-
-void sleepM(unsigned ms) {
-    struct timespec ts;
-    ts.tv_sec = ms/1000;
-    ts.tv_nsec = (ms%1000)*1000000;
-    nanosleep(&ts, NULL);
-}
-
-void setRawMode(_Bool enable) {
-    struct termios old, new;
-
-    tcgetattr(STDIN_FILENO, &old);
-    new = old;
-
-    if (enable) {
-        new.c_lflag &= ~(ICANON | ECHO);
-    } else {
-        new.c_lflag |= ICANON | ECHO;
-    }
-
-    tcsetattr(STDIN_FILENO, TCSANOW, &new);
-}
-
-void setNonblockingInput(_Bool enable) {
-    if (enable) {
-        fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
-    } else {
-        fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) & (~O_NONBLOCK));
-    }
-}
+#include "nomrat_game.h"
 
 // !!! MODIFY THIS WITH YOUR PATH TO nomrat ASSETS
 #define PATH(_x) "~/Documents/Git/nomrat/assets/objects/" _x
 
-// Terminal size
-unsigned w, h;
-// Size in pixels of the terminal
-unsigned pw, ph;
-// visually, Y = ratio*X. If ratio is 2.0 (this is the case in most termials),
-// this means that the Y axis is visually twice as large as the X axis.
-float char_ratio;
-
-void startGame(void) {
-    setRawMode(1);
-    setNonblockingInput(1);
-    ratClearObjects();
-    ratClearText();
-    ratSetXY(0, 0);
-}
-
-void endGame(void) {
-    setNonblockingInput(0);
-    setRawMode(0);
-    ratClearObjects();
-    ratClearText();
-}
-
-unsigned char read_buffer[64];
-unsigned readInput(void) {
-    return fread(read_buffer, 1, 64, stdin);
-}
-
-#define EPSILON 0.1
-#define ABS(_x) ((_x < 0) ? -_x : _x)
-#define FEQUAL(_x, _y) (ABS(_x) - ABS(_y) < EPSILON)
-
 int main(void) {
     startGame();
 
-    ratGetWH(&w, &h, &pw, &ph);
-    char_ratio = (float)(ph/h)/(float)(pw/w);
-
     printf("Terminal size in cells; pixels: %ux%u; %ux%u. Ratio: %0.4f\n"
            "W,A,S,D: 2D movement; Q,E: 3D movement; B: quit\n",
-           w, h, pw, ph, char_ratio);
-    assert(FEQUAL(char_ratio, 2.0) && "Error: Y axis must be close to twice the size of X axis in order for games to provide a consistent visual experience");
+           g_w, g_h, g_pw, g_ph, g_char_ratio);
 
-    for (unsigned i = 0; i < h-5; i++) {
-        for (unsigned  j = 0; j < w; j++) {
+    for (unsigned i = 0; i < g_h-5; i++) {
+        for (unsigned  j = 0; j < g_w; j++) {
             printf(" ");
         }
         printf("\n");
      }
 
 
-    #define FLOWER_C 64
-    unsigned flowers[FLOWER_C];
-    defer_commands = 1;
-    for (unsigned i = 0; i < FLOWER_C; i++) {
+    unsigned flowers[RAT_OBJ_LIMIT];
+    rat_defer_commands = 1;
+    for (unsigned i = 0; i < RAT_OBJ_LIMIT; i++) {
         flowers[i] = ratRegister(PATH("flower.glb"), "glb");
         ratPlace(flowers[i], 3 + (i%16)*3, 5 + (i/16)*3, 4, 4);
         ratUpdateRot(flowers[i], 90, 0, 0);
@@ -107,14 +37,18 @@ int main(void) {
 
     _Bool game_active = 1;
     while(game_active) {
-        defer_commands = 1;
-        for (unsigned i = 0; i < FLOWER_C; i++) {
+        rat_defer_commands = 1;
+        for (unsigned i = 0; i < RAT_OBJ_LIMIT; i++) {
             ratUpdateSimpleF(flowers[i], x, y);
             ratUpdateZ(flowers[i], z);
             ratUpdateRot(flowers[i], 90, rotation, 0);
         }
         ratForce();
-        if (readInput()) switch(read_buffer[0]){
+
+        // The read buffer is large in order to avoid blocking the program in input handling easily,
+        // but we only take the first input during the frame and the rest will be ignored
+        // for this example. The return value of readInput() is the buffer length.
+        if (readInput()) switch(g_read_buffer[0]) {
         case 'a':
             x -= 1;
             break;
@@ -142,6 +76,8 @@ int main(void) {
         }
 
         rotation += 15;
+
+        // ~30FPS, frame time = 33ms
         sleepM(33);
     }
 

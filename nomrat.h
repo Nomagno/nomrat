@@ -1,6 +1,10 @@
 #ifndef _NOMRAT_H
 #define _NOMRAT_H
 
+// Single header wrapper for the Ratty Graphics Protocol
+// with the Camera control extension,
+// plus some basic necessary ANSI/POSIX terminal handling goodies
+
 #include <sys/ioctl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,10 +21,10 @@ unsigned rat_internal_w=1, rat_internal_h=1; // Width, height in characters
 unsigned rat_internal_pw=1, rat_internal_ph=1; // Width, height in pixels
 
 // Can be set to 1 in order to not force flush. reset when ratForce() is called.
-_Bool defer_commands = 0;
+_Bool rat_defer_commands = 0;
 
 void rat_internal_pre() { printf("\x1b_ratty;g;"); }
-void rat_internal_post() { printf("\x1b\\"); if (!defer_commands) fflush(stdout); }
+void rat_internal_post() { printf("\x1b\\"); if (!rat_defer_commands) fflush(stdout); }
 
 // Stores the terminal width in columns into w,
 // and the height in rows into h.
@@ -53,10 +57,10 @@ void ratClearObjects(void) {
 }
 
 // Clears screen (text)
-void ratClearText(void) { printf("\x1b[2J"); if (!defer_commands) fflush(stdout); }
+void ratClearText(void) { printf("\x1b[2J"); if (!rat_defer_commands) fflush(stdout); }
 
 // Sets cursor position
-void ratSetXY(unsigned x, unsigned y) { printf("\x1b[%u;%uH", y, x); if (!defer_commands) fflush(stdout); }
+void ratSetXY(unsigned x, unsigned y) { printf("\x1b[%u;%uH", y, x); if (!rat_defer_commands) fflush(stdout); }
 
 // Registers object with path (path relative to ratty's assets/objects/ folder, absolute paths not supported)
 // and where format is one of "obj", "glb".
@@ -101,7 +105,7 @@ void ratDelete(unsigned id) {
 
 // Forces all accumulated commands to be sent
 void ratForce(void) {
-    defer_commands = 0;
+    rat_defer_commands = 0;
     fflush(stdout);
 }
 
