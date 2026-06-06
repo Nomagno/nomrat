@@ -117,7 +117,7 @@ MAKE_SYSTEM(render_3d) {
         struct origin *o = &GET_COMPONENT(id, origin);
         struct position *p = &GET_COMPONENT(id, position);
         ratUpdatePos(id, o->ox+p->x, o->oy+p->y, o->oz+p->z);
-        ratUpdateRot(id, o->rx+p->rx, o->ry+p->ry, p->rz);
+        ratUpdateRot(id, o->rx+p->rx, o->ry+p->ry, o->rz+p->rz);
         //printf("Rendered for %d: %f,%f,%f; %f,%f,%f\n", id, o->x+o->ox+p->x, o->y+o->oy+p->y, o->z+o->oz+p->z, o->rx+p->rx, o->ry+p->ry, o->rz+p->rz);
     }
     ratForce();
