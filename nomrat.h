@@ -12,13 +12,21 @@
 #include <unistd.h>
 
 #define RAT_OBJ_LIMIT 64
+
+typedef struct {
+    char *name;
+    char *model;
+} EntityOrigin;
+
+EntityOrigin rat_internal_objects[RAT_OBJ_LIMIT];
+
 #define NOMRAT_CHECK_ID(_id)\
-if (_id >= RAT_OBJ_LIMIT || rat_internal_objects[_id] == NULL)\
+if (_id >= RAT_OBJ_LIMIT || rat_internal_objects[_id].model == NULL)\
     { fprintf(stderr, "NomRat Error: Unknown ID %u\n", _id); exit(1); } \
 
-char *rat_internal_objects[RAT_OBJ_LIMIT];
 unsigned rat_internal_w=1, rat_internal_h=1; // Width, height in characters
 unsigned rat_internal_pw=1, rat_internal_ph=1; // Width, height in pixels
+
 
 // Can be set to 1 in order to not force flush. reset when ratForce() is called.
 _Bool rat_defer_commands = 0;
@@ -49,8 +57,10 @@ void ratGetWH(unsigned *w, unsigned *h, unsigned *pw, unsigned *ph) {
 
 // Deletes ALL objects
 void ratClearObjects(void) {
-    for (unsigned i = 0; i < RAT_OBJ_LIMIT; i++)
-        rat_internal_objects[i] = NULL;
+    for (unsigned i = 0; i < RAT_OBJ_LIMIT; i++) {
+        rat_internal_objects[i].name = NULL;
+        rat_internal_objects[i].model = NULL;
+    }
     rat_internal_pre();
     printf("d");
     rat_internal_post();
@@ -65,12 +75,13 @@ void ratSetXY(unsigned x, unsigned y) { printf("\x1b[%u;%uH", y, x); if (!rat_de
 // Registers object with path (path relative to ratty's assets/objects/ folder, absolute paths not supported)
 // and where format is one of "obj", "glb".
 // Returns the integer handle (ID) of the object for use with the rest of commands
-unsigned ratRegister(char *path, char *fmt) {
+unsigned ratRegister(char *name, char *path, char *fmt) {
     _Bool obj_limit_reached = 1;
     unsigned retval = 0;
     for (unsigned i = 0; i < RAT_OBJ_LIMIT; i++) {
-        if (rat_internal_objects[i] == NULL) {
-            rat_internal_objects[i] = path;
+        if (rat_internal_objects[i].model == NULL) {
+            rat_internal_objects[i].name = name;
+            rat_internal_objects[i].model = path;
             retval = i;
             obj_limit_reached = 0;
             break;
@@ -95,9 +106,16 @@ void ratPlace(unsigned id, unsigned x, unsigned y, unsigned w, unsigned h) {
 }
 
 // Deletes object
-void ratDelete(unsigned id) {
-    if (id < RAT_OBJ_LIMIT)
-        rat_internal_objects[id] = NULL;
+void ratDelete(signed id) {
+    if (id < 0) {
+        fprintf(stderr, "NomRat Error: Can't delete object with negative ID %d\n", id);
+        exit(1);
+    }
+
+    if (id < RAT_OBJ_LIMIT) {
+        rat_internal_objects[id].name = NULL;
+        rat_internal_objects[id].model = NULL;
+    }
     rat_internal_pre();
     printf("d;id=%u", id);
     rat_internal_post();
@@ -120,7 +138,7 @@ void ratUpdatePos(unsigned id, float px, float py, float pz) {
 }
 
 // Updates position of object, integer xy plane version for terminal-style jagged movement
-void ratUpdateSimple(unsigned id, int px, int py) {
+void ratUpdateSimple(unsigned id, signed px, signed py) {
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
     printf("u;id=%u;px=%f;py=%f", id, ((float)px)/rat_internal_w, ((float)py)/rat_internal_h);

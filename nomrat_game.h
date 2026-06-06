@@ -96,4 +96,71 @@ unsigned readInput(void) {
     return fread(g_read_buffer, 1, INPUT_BUFFER_SIZE, stdin);
 }
 
+
+/****************************************************
+NOMRAT ENTITY-COMPONENT-SYSTEM HELPERS
+See test.c for detailed usage
+****************************************************/
+
+#define IS_3D(_id) (_id < RAT_OBJ_LIMIT)
+
+#ifndef COMPONENT_LIST_TYPE
+#error "NomRat Game Error: Define the macro COMPONENT_LIST_TYPE before including"
+#endif
+
+#ifndef COMPONENT_LIST_FIELDS
+#error "NomRat Game Error: Define the macro COMPONENT_LIST_FIELDS before including"
+#endif
+// The format must be: component_field_1,component_field_2,component_field_3
+
+COMPONENT_LIST_TYPE g_components;
+
+#define COMMA ,
+#define SYSTEM(_name) nomrat_game_system_##_name
+#define MAKE_SYSTEM(_name, ...) signed SYSTEM(_name)(__VA_ARGS__)
+#define CALL_SYSTEM(_name, ...) SYSTEM(_name)(__VA_ARGS__)
+
+// Sibling code FFFF -> no sibling
+#define GET_SIBLING_0(_comp) (_comp.siblings & 0x000000000000FFFF)
+#define GET_SIBLING_1(_comp) (_comp.siblings & 0x00000000FFFF0000 >> 16)
+#define GET_SIBLING_2(_comp) (_comp.siblings & 0x0000FFFF00000000 >> 32)
+#define GET_SIBLING_3(_comp) (_comp.siblings & 0xFFFF000000000000 >> 48)
+
+#define IS_SIBLING(_id) (_id < ENTITY_LIMIT)
+
+#define SET_SIBLING_0(_comp, _id) (_comp.siblings |= _id & 0xFFFF << 0)
+#define SET_SIBLING_1(_comp, _id) (_comp.siblings |= _id & 0xFFFF << 16)
+#define SET_SIBLING_2(_comp, _id) (_comp.siblings |= _id & 0xFFFF << 32)
+#define SET_SIBLING_3(_comp, _id) (_comp.siblings |= _id & 0xFFFF << 48)
+
+// Note: make sure that all component types have these two members: signed id; siblings_t siblings;
+// siblings holds up to four IDs of weakly related entities
+// The entity limit is 2^16-1
+// You can ensure all by copy pasting this before starting the ECS definitions:
+// typedef uint64_t siblings_t;
+// #define COMPONENT_PRELUDE signed id; siblings_t siblings;
+// #define ENTITY_LIMIT 32767
+// And start each component struct with "COMPONENT_PRELUDE;"
+
+
+#define HAS_COMPONENT(_id, _comp_name) (g_components._comp_name[_id].id == (signed)_id)
+#define GET_COMPONENT_N(_id, _comp_name) (HAS_COMPONENT(_id, _comp_name) ? &(g_components._comp_name[_id]) : NULL))
+#define GET_COMPONENT(_id, _comp_name) (g_components._comp_name[_id])
+
+#include "map.h"
+#define ERASE(_comp_name, _id) g_components._comp_name.id = -1;
+#define KILL_ENTITY(_id)\
+if IS_3D(_id) { ratDelete(_id); }  MAP_UD(ERASE, _id, COMPONENT_LIST_FIELDS)
+
+#define ADD_COMPONENT(_comp_name, _id) g_components._comp_name[_id] = (struct _comp_name){0};\
+                                       g_components._comp_name[_id].id = _id;\
+                                       g_components._comp_name[_id].siblings = 0xFFFFFFFFFFFFFFFF;
+#define ADD_COMPONENTS(_id, ...) MAP_UD(ADD_COMPONENT, _id, __VA_ARGS__)
+
+#define INIT_ARRAY_POS(_comp_name) g_components._comp_name[i].id = -1;\
+                                        g_components._comp_name[i].siblings = 0xFFFFFFFFFFFFFFFF;
+#define INIT_ECS() for(unsigned i = 0; i < ENTITY_LIMIT; i++) {\
+        MAP(INIT_ARRAY_POS, COMPONENT_LIST_FIELDS);\
+    }
+
 #endif
