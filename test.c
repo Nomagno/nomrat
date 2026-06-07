@@ -4,6 +4,9 @@
 #include <fcntl.h>
 #include "nomrat.h"
 
+// !!! MODIFY THIS WITH YOUR PATH TO nomrat ASSETS
+#define PATH(_x) "~/path/to/nomrat/assets/objects/" _x
+
 void sleepM(unsigned ms) {
     struct timespec ts;
     ts.tv_sec = ms/1000;
@@ -34,9 +37,6 @@ void setNonblockingInput(_Bool enable) {
     }
 }
 
-// !!! MODIFY THIS WITH YOUR PATH TO nomrat ASSETS
-#define PATH(_x) "~/Documents/Git/nomrat/assets/objects/" _x
-
 // Terminal size
 unsigned w, h;
 // Size in pixels of the terminal
@@ -62,29 +62,40 @@ unsigned readInput(void) {
     return fread(read_buffer, 1, 64, stdin);
 }
 
-int main(void) {
-    startGame();
-    ratGetWH(&w, &h, &pw, &ph);
-
-    printf("Terminal size in cells: %u x %u.\n"
-           "Terminal size in pixels: %u x %u\n"
-           "W,A,S,D: 2D movement; Q,E: 3D movement; B: quit\n",
-           w, h, pw, ph);
-
+void makeSpace(void) {
     for (unsigned i = 0; i < h-5; i++) {
         for (unsigned  j = 0; j < w; j++) {
             printf(" ");
         }
         printf("\n");
      }
+}
+
+int main(int argc, char **argv) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: ./test object_count\n");
+        return 1;
+    }
+    unsigned object_count = strtol(argv[1], NULL, 10);
+    if (object_count > 4096) {
+        fprintf(stderr, "Error: object_count must be between 0 and 4096\n");
+        return 1;
+    }
 
 
-    #define FLOWER_C 64
-    unsigned flowers[FLOWER_C];
+    startGame();
+    ratGetWH(&w, &h, &pw, &ph);
+
+    printf("Terminal size in cells: %u x %u; in pixels: %u x %u\n"
+           "Object count: %u\n"
+           "W,A,S,D: 2D movement; Q,E: 3D movement; B: quit\n",
+           w, h, pw, ph, object_count);
+
+    unsigned flowers[object_count];
     defer_commands = 1;
-    for (unsigned i = 0; i < FLOWER_C; i++) {
+    for (unsigned i = 0; i < object_count; i++) {
         flowers[i] = ratRegister(PATH("flower.glb"), "glb");
-        ratPlace(flowers[i], 3 + (i%16)*3, 5 + (i/16)*3, 4, 4);
+        ratPlace(flowers[i], 3 + (i%100), 5 + (i/100), 4, 4);
         ratUpdateRot(flowers[i], 90, 0, 0);
     }
     ratForce();
@@ -98,7 +109,7 @@ int main(void) {
     _Bool game_active = 1;
     while(game_active) {
         defer_commands = 1;
-        for (unsigned i = 0; i < FLOWER_C; i++) {
+        for (unsigned i = 0; i < object_count; i++) {
             ratUpdateSimpleF(flowers[i], x, y);
             ratUpdateZ(flowers[i], z);
             ratUpdateRot(flowers[i], 90, rotation, 0);

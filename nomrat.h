@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#define RAT_OBJ_LIMIT 64
+#define RAT_OBJ_LIMIT 4096
 #define NOMRAT_CHECK_ID(_id)\
 if (_id >= RAT_OBJ_LIMIT || rat_internal_objects[_id] == NULL)\
     { fprintf(stderr, "NomRat Error: Unknown ID %u\n", _id); exit(1); } \
@@ -172,71 +172,4 @@ void ratUpdateDepth(unsigned id, float depth) {
     rat_internal_post();
 }
 
-// Changes the selected camera slot's offset to the center of the terminal plane
-// In the case of Flat mode, it's ignored
-void ratCameraPos(unsigned id, float px, float py, float pz) {
-    rat_internal_pre();
-    printf("c;id=%u;px=%f;py=%f;pz=%f", id, px, py, pz);
-    rat_internal_post();
-}
-
-// Changes the selected camera slot's rotation. ry currently ignored as only pitch and yaw are supported, not roll
-// In the case of Flat mode, it's ignored
-void ratCameraRot(unsigned id, float rx, float ry, float rz) {
-    rat_internal_pre();
-    printf("c;id=%u;rx=%f;ry=%f;rz=%f", id, rx, ry, rz);
-    rat_internal_post();
-}
-
-// In the case of Ortho/Mobius mode, changes the zoom.
-// In the case of Persp mode, changes the FOV.
-// In the case of Flat mode, it's ignored
-void ratCameraScale(unsigned id, float scale) {
-    rat_internal_pre();
-    printf("c;id=%u;scale=%f", id, scale);
-    rat_internal_post();
-}
-
-// Sets the camera type, where type is one of: Flat, Ortho, Persp, Mobius
-void ratCameraType(unsigned id, char *type) {
-    rat_internal_pre();
-    printf("c;id=%u;type=%s", id, type);
-    rat_internal_post();
-}
-
-// Instantly copies the current camera slot's settings to Ratty's current camera settings.
-void ratCameraSet(unsigned id) {
-    rat_internal_pre();
-    printf("c;id=%u;set=1", id);
-    rat_internal_post();
-}
-
-/*
-// Feature not in mainline ratty yet
-// Updates the clipping plane and enables clipping
-void ratUpdateClipping(unsigned id, unsigned x, unsigned y, unsigned w, unsigned h) {
-    NOMRAT_CHECK_ID(id);
-    rat_internal_pre();
-    printf("u;id=%u;clip=1;clip_row=%u;clip_col=%u;clip_w=%u;clip_h=%u", id, x, y, w, h);
-    rat_internal_post();
-}
-// Feature not in mainline ratty yet
-// Disables clipping
-void ratUpdateNoClip(unsigned id) {
-    NOMRAT_CHECK_ID(id);
-    rat_internal_pre();
-    printf("u;id=%u;clip=0", id);
-    rat_internal_post();
-}
-
-// Feature idea not implemented in ratty for now
-// Make object tied to the current terminal row,column of
-// its anchor instead of to the terminal cell itself
-void raUpdatePersistent(unsigned id, _Bool persistent) {
-    NOMRAT_CHECK_ID(id);
-    rat_internal_pre();
-    printf("u;id=%u;persistent=%u", persistent);
-    rat_internal_post();
-}
-*/
 #endif
