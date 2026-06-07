@@ -91,6 +91,8 @@ int main(int argc, char **argv) {
            "W,A,S,D: 2D movement; Q,E: 3D movement; B: quit\n",
            w, h, pw, ph, object_count);
 
+    makeSpace();
+
     unsigned flowers[object_count];
     defer_commands = 1;
     for (unsigned i = 0; i < object_count; i++) {
