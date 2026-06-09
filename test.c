@@ -6,13 +6,13 @@
 
 // Helper mode
 #include "nomrat_game.h"
-struct position {
+struct Position {
     COMPONENT_PRELUDE;
     float x, y, z;
     float rx, ry, rz;
 };
 
-struct origin {
+struct Origin {
     COMPONENT_PRELUDE;
     unsigned x, y, z;
     float ox, oy, oz;
@@ -20,8 +20,8 @@ struct origin {
 };
 
 struct Components {
-    struct position position[ENTITY_LIMIT];
-    struct origin origin[ENTITY_LIMIT];
+    struct Position position[ENTITY_LIMIT];
+    struct Origin origin[ENTITY_LIMIT];
 };
 
 #define COMPONENT_LIST_TYPE struct Components
@@ -61,7 +61,7 @@ MAKE_SYSTEM(handle_input) {
         if (!HAS_COMPONENT(id, position))
             continue;
 
-        struct position *p = &GET_COMPONENT(id, position);
+        struct Position *p = &GET_COMPONENT(id, position);
         switch(input) {
         case 'a':
             p->x -= 1;
@@ -118,8 +118,8 @@ MAKE_SYSTEM(render_3d) {
             continue;
         if (!HAS_COMPONENT(id, position))
             continue;
-        struct origin *o = &GET_COMPONENT(id, origin);
-        struct position *p = &GET_COMPONENT(id, position);
+        struct Origin *o = &GET_COMPONENT(id, origin);
+        struct Position *p = &GET_COMPONENT(id, position);
         ratUpdatePos(id, o->ox+p->x, o->oy+p->y, o->oz+p->z);
         ratUpdateRot(id, o->rx+p->rx, o->ry+p->ry, o->rz+p->rz);
         //printf("Rendered for %d: %f,%f,%f; %f,%f,%f\n", id, o->x+o->ox+p->x, o->y+o->oy+p->y, o->z+o->oz+p->z, o->rx+p->rx, o->ry+p->ry, o->rz+p->rz);

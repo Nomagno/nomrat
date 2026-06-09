@@ -4,7 +4,7 @@
 #include <stdint.h>
 #define SIBLINGS_T uint64_t
 #define COMPONENT_PRELUDE signed id; SIBLINGS_T siblings;
-#define ENTITY_LIMIT 32767
+#define ENTITY_LIMIT ((1<<15) - 1)
 
 // In non-load mode, we undefine this so the header can be included again.
 #undef _NOMRAT_GAME_H
@@ -156,7 +156,9 @@ COMPONENT_LIST_TYPE g_components;
 #define ITERATE_OVER_COMPONENT_LIST(_x) for (unsigned _x = 0; _x < ENTITY_LIMIT; _x++)
 
 #include "map.h"
-#define CLEAR_COMPONENT(_comp_name, _id) g_components._comp_name[_id] = (struct _comp_name){0};\
+
+#define TYPEOF_COMPONENT(_x) typeof(((COMPONENT_LIST_TYPE){0})._x[0])
+#define CLEAR_COMPONENT(_comp_name, _id) g_components._comp_name[_id] = (TYPEOF_COMPONENT(_comp_name)){0};\
                                    g_components._comp_name[_id].id = -1;\
                                    g_components._comp_name[_id].siblings = 0xFFFFFFFFFFFFFFFF;
 #define KILL_ENTITY(_id)\
