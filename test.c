@@ -32,7 +32,7 @@ struct Components {
 #include "nomrat_game.h"
 
 // !!! MODIFY THIS WITH YOUR PATH TO nomrat ASSETS
-#define PATH(_x) "~/Documents/Git/nomrat/assets/objects/" _x
+#define PATH(_x) "~/path/to/nomrat/assets/objects/" _x
 
 unsigned getInput(void) {
     // The read buffer is large in order to avoid blocking the program in input handling easily,
