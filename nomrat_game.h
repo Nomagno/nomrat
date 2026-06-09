@@ -1,6 +1,17 @@
 #ifndef _NOMRAT_GAME_H
 #define _NOMRAT_GAME_H
 
+#include <stdint.h>
+#define SIBLINGS_T uint64_t
+#define COMPONENT_PRELUDE signed id; SIBLINGS_T siblings;
+#define ENTITY_LIMIT 32767
+
+// In non-load mode, we undefine this so the header can be included again.
+#undef _NOMRAT_GAME_H
+
+#ifdef NOMRAT_GAME_LOAD
+#define _NOMRAT_GAME_H
+
 // Auxiliary single header library for making games with
 // nomrat.h, see test.c for example usage
 
@@ -136,31 +147,26 @@ COMPONENT_LIST_TYPE g_components;
 // Note: make sure that all component types have these two members: signed id; siblings_t siblings;
 // siblings holds up to four IDs of weakly related entities
 // The entity limit is 2^16-1
-// You can ensure all by copy pasting this before starting the ECS definitions:
-// typedef uint64_t siblings_t;
-// #define COMPONENT_PRELUDE signed id; siblings_t siblings;
-// #define ENTITY_LIMIT 32767
-// And start each component struct with "COMPONENT_PRELUDE;"
+// You can ensure all by using the ENTITY_LIMIT macro and and starting all component structs with 'COMPONENT_PRELUDE;'
 
 
 #define HAS_COMPONENT(_id, _comp_name) (g_components._comp_name[_id].id == (signed)_id)
 #define GET_COMPONENT_N(_id, _comp_name) (HAS_COMPONENT(_id, _comp_name) ? &(g_components._comp_name[_id]) : NULL))
 #define GET_COMPONENT(_id, _comp_name) (g_components._comp_name[_id])
+#define ITERATE_OVER_COMPONENT_LIST(_x) for (unsigned _x = 0; _x < ENTITY_LIMIT; _x++)
 
 #include "map.h"
-#define ERASE(_comp_name, _id) g_components._comp_name.id = -1;
+#define CLEAR_COMPONENT(_comp_name, _id) g_components._comp_name[_id] = (struct _comp_name){0};\
+                                   g_components._comp_name[_id].id = -1;\
+                                   g_components._comp_name[_id].siblings = 0xFFFFFFFFFFFFFFFF;
 #define KILL_ENTITY(_id)\
-if IS_3D(_id) { ratDelete(_id); }  MAP_UD(ERASE, _id, COMPONENT_LIST_FIELDS)
+    if IS_3D(_id) { ratDelete(_id); }  MAP_UD(CLEAR_COMPONENT, _id, COMPONENT_LIST_FIELDS)
+#define INIT_ECS()\
+    for(unsigned id = 0; id < ENTITY_LIMIT; id++) { MAP_UD(CLEAR_COMPONENT, id, COMPONENT_LIST_FIELDS); }
+#define ADD_COMPONENT(_comp_name, _id) CLEAR_COMPONENT(_comp_name, id);\
+                                       g_components._comp_name[_id].id = _id;
+#define ADD_COMPONENTS(_id, ...) MAP_UD(ADD_COMPONENT, _id, __VA_ARGS__);
 
-#define ADD_COMPONENT(_comp_name, _id) g_components._comp_name[_id] = (struct _comp_name){0};\
-                                       g_components._comp_name[_id].id = _id;\
-                                       g_components._comp_name[_id].siblings = 0xFFFFFFFFFFFFFFFF;
-#define ADD_COMPONENTS(_id, ...) MAP_UD(ADD_COMPONENT, _id, __VA_ARGS__)
-
-#define INIT_ARRAY_POS(_comp_name) g_components._comp_name[i].id = -1;\
-                                        g_components._comp_name[i].siblings = 0xFFFFFFFFFFFFFFFF;
-#define INIT_ECS() for(unsigned i = 0; i < ENTITY_LIMIT; i++) {\
-        MAP(INIT_ARRAY_POS, COMPONENT_LIST_FIELDS);\
-    }
+#endif
 
 #endif

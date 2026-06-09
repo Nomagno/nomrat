@@ -4,10 +4,8 @@
 
 #include "nomrat.h"
 
-typedef uint64_t siblings_t;
-#define COMPONENT_PRELUDE signed id; siblings_t siblings;
-#define ENTITY_LIMIT 32767
-
+// Helper mode
+#include "nomrat_game.h"
 struct position {
     COMPONENT_PRELUDE;
     float x, y, z;
@@ -29,12 +27,14 @@ struct Components {
 #define COMPONENT_LIST_TYPE struct Components
 #define COMPONENT_LIST_FIELDS position,origin
 
+// load the library after providing the two user-defined macros
+#define NOMRAT_GAME_LOAD
 #include "nomrat_game.h"
 
 // !!! MODIFY THIS WITH YOUR PATH TO nomrat ASSETS
-#define PATH(_x) "~/path/to/nomrat/assets/objects/" _x
+#define PATH(_x) "~/Documents/Git/nomrat/assets/objects/" _x
 
-uint32_t getInput(void) {
+unsigned getInput(void) {
     // The read buffer is large in order to avoid blocking the program in input handling easily,
     // but we only take the first input during the frame and the rest will be ignored
     // for this example. The return value of readInput() is the buffer length.
@@ -57,7 +57,7 @@ _Bool global_game_active = 1;
 
 MAKE_SYSTEM(handle_input) {
     char input = getInput();
-    for (unsigned id = 0; id < ENTITY_LIMIT; id++) {
+    ITERATE_OVER_COMPONENT_LIST(id) {
         if (!HAS_COMPONENT(id, position))
             continue;
 
@@ -93,23 +93,27 @@ MAKE_SYSTEM(handle_input) {
 }
 
 MAKE_SYSTEM(animate_spin) {
-    for (unsigned id = 0; id < ENTITY_LIMIT; id++) {
+    ITERATE_OVER_COMPONENT_LIST(id) {
+        // optimization: all the ratty object IDs come first, this is
+        // an engine guarantee, so if we find a non-3D object we can exit the loop
         if (!IS_3D(id))
-            continue;
+            break;
         if (!HAS_COMPONENT(id, position))
             continue;
-        GET_COMPONENT(id, position).ry += 15;
-        GET_COMPONENT(id, position).ry = fmod(GET_COMPONENT(id, position).ry, 360);
-
+        float *ry = &GET_COMPONENT(id, position).ry;
+        *ry += 15;
+        *ry = fmod(*ry, 360);
     }
     return 0;
 }
 
 MAKE_SYSTEM(render_3d) {
     rat_defer_commands = 1;
-    for (unsigned id = 0; id < RAT_OBJ_LIMIT; id++) {
+    ITERATE_OVER_COMPONENT_LIST(id) {
+        // optimization: all the ratty object IDs come first, this is
+        // an engine guarantee, so if we find a non-3D object we can exit the loop
         if (!IS_3D(id))
-            continue;
+            break;
         if (!HAS_COMPONENT(id, origin))
             continue;
         if (!HAS_COMPONENT(id, position))
@@ -128,13 +132,20 @@ int main() {
     startGame();
     makeSpace();
     INIT_ECS();
+    ratSetXY(0, 0);
+    printf("Terminal size in cells: %u x %u; in pixels: %u x %u\n"
+           "Controls: WASD for 2D movement, QE for 3D movement, B to quit.\n",
+            g_w, g_h, g_pw, g_ph);
     rat_defer_commands = 1;
     for (unsigned i = 0; i < 64; i++) {
+        //ratRegister and ratPlace must be called explicitly, but not ratDelete.
+        //ratDelete is handled by the KILL_ENTITY(entity_id) macro.
         unsigned id = ratRegister("cuteFlower", PATH("flower.glb"), "glb");
-        ADD_COMPONENTS(id, position, origin);
         unsigned x = 3 + (i%16)*3, y = 5 + (i/16)*3;
         unsigned w = 4, h = 4;
         ratPlace(id, x, y, w, h);
+
+        ADD_COMPONENTS(id, position, origin);
         GET_COMPONENT(id, origin).x = x;
         GET_COMPONENT(id, origin).y = y;
         // To rotate the flower.glb model correctly for visualizing
