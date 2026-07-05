@@ -16,8 +16,8 @@ c_include "unistd.h"
 #define String u8 &
 
 struct EntityOrigin {
-    mut String name;
-    mut String model;
+    String name;
+    String model;
 };
 
 mut struct EntityOrigin [RAT_OBJ_LIMIT] rat_internal_objects;

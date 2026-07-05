@@ -2,7 +2,7 @@
 #define _NOMRAT_GAME_H
 
 #define SIBLINGS_T u64
-#define COMPONENT_PRELUDE mut i32 id; mut SIBLINGS_T siblings;
+#define COMPONENT_PRELUDE i32 id; SIBLINGS_T siblings;
 #define ENTITY_LIMIT ((1<<15) - 1)
 
 // In non-load mode, we undefine this so the header can be included again.

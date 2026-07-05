@@ -7,20 +7,20 @@ c_include "math.h"
 #include "nomrat_game.preh"
 struct Position {
     COMPONENT_PRELUDE;
-    mut f32 x, y, z;
-    mut f32 rx, ry, rz;
+    f32 x, y, z;
+    f32 rx, ry, rz;
 };
 
 struct Origin {
     COMPONENT_PRELUDE;
-    mut u32 x, y, z;
-    mut f32 ox, oy, oz;
-    mut f32 rx, ry, rz;
+    u32 x, y, z;
+    f32 ox, oy, oz;
+    f32 rx, ry, rz;
 };
 
 struct Components {
-    mut struct Position [ENTITY_LIMIT] position;
-    mut struct Origin [ENTITY_LIMIT] origin;
+    struct Position [ENTITY_LIMIT] position;
+    struct Origin [ENTITY_LIMIT] origin;
 };
 
 #define COMPONENT_LIST_TYPE struct Components
