@@ -1,27 +1,26 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <math.h>
+c_include "stdio.h"
+c_include "math.h"
 
-#include "nomrat.h"
+#include "nomrat.preh"
 
 // Helper mode
-#include "nomrat_game.h"
+#include "nomrat_game.preh"
 struct Position {
     COMPONENT_PRELUDE;
-    float x, y, z;
-    float rx, ry, rz;
+    mut f32 x, y, z;
+    mut f32 rx, ry, rz;
 };
 
 struct Origin {
     COMPONENT_PRELUDE;
-    unsigned x, y, z;
-    float ox, oy, oz;
-    float rx, ry, rz;
+    mut u32 x, y, z;
+    mut f32 ox, oy, oz;
+    mut f32 rx, ry, rz;
 };
 
 struct Components {
-    struct Position position[ENTITY_LIMIT];
-    struct Origin origin[ENTITY_LIMIT];
+    mut struct Position [ENTITY_LIMIT] position;
+    mut struct Origin [ENTITY_LIMIT] origin;
 };
 
 #define COMPONENT_LIST_TYPE struct Components
@@ -29,12 +28,12 @@ struct Components {
 
 // load the library after providing the two user-defined macros
 #define NOMRAT_GAME_LOAD
-#include "nomrat_game.h"
+#include "nomrat_game.preh"
 
 // !!! MODIFY THIS WITH YOUR PATH TO nomrat ASSETS
-#define PATH(_x) "~/path/to/nomrat/assets/objects/" _x
+#define PATH(_x) "~/Documents/Git/nomrat/assets/objects/" _x
 
-unsigned getInput(void) {
+u32 (&)(void) getInput = ${
     // The read buffer is large in order to avoid blocking the program in input handling easily,
     // but we only take the first input during the frame and the rest will be ignored
     // for this example. The return value of readInput() is the buffer length.
@@ -42,44 +41,44 @@ unsigned getInput(void) {
         return g_read_buffer[0];
     else
         return 0;
-}
+};
 
-void makeSpace(void) {
-    for (unsigned i = 0; i < g_h; i++) {
-        for (unsigned  j = 0; j < g_w; j++) {
+void (&)(void) makeSpace = ${
+    for (mut u32 i = 0; i < g_h; i++) {
+        for (mut u32 j = 0; j < g_w; j++) {
             printf(" ");
         }
         printf("\n");
     }
-}
+};
 
-_Bool global_game_active = 1;
+mut bool global_game_active = 1;
 
-MAKE_SYSTEM(handle_input) {
-    char input = getInput();
+MAKE_SYSTEM(handle_input) = ${
+    u8 input = getInput();
     ITERATE_OVER_COMPONENT_LIST(id) {
         if (!HAS_COMPONENT(id, position))
             continue;
 
-        struct Position *p = &GET_COMPONENT(id, position);
+        struct Position mut & p = &GET_COMPONENT(id, position);
         switch(input) {
         case 'a':
-            p->x -= 1;
+            p->x = p->x - 1;
             break;
         case 'd':
-            p->x += 1;
+            p->x = p->x + 1;
             break;
         case 'w':
-            p->y += 1;
+            p->y = p->y + 1;
             break;
         case 's':
-            p->y -= 1;
+            p->y = p->y - 1;
             break;
         case 'q':
-            p->z -= 5;
+            p->z = p->z - 5;
             break;
         case 'e':
-            p->z += 5;
+            p->z = p->z + 5;
             break;
         case 'b':
             global_game_active = 0;
@@ -90,9 +89,9 @@ MAKE_SYSTEM(handle_input) {
         }
     }
     return 0;
-}
+};
 
-MAKE_SYSTEM(animate_spin) {
+MAKE_SYSTEM(animate_spin) = ${
     ITERATE_OVER_COMPONENT_LIST(id) {
         // optimization: all the ratty object IDs come first, this is
         // an engine guarantee, so if we find a non-3D object we can exit the loop
@@ -100,14 +99,14 @@ MAKE_SYSTEM(animate_spin) {
             break;
         if (!HAS_COMPONENT(id, position))
             continue;
-        float *ry = &GET_COMPONENT(id, position).ry;
-        *ry += 15;
-        *ry = fmod(*ry, 360);
+        f32 mut & ry = &GET_COMPONENT(id, position).ry;
+        ^ry = ^ry + 15;
+        ^ry = fmod(^ry, 360);
     }
     return 0;
-}
+};
 
-MAKE_SYSTEM(render_3d) {
+MAKE_SYSTEM(render_3d) = ${
     rat_defer_commands = 1;
     ITERATE_OVER_COMPONENT_LIST(id) {
         // optimization: all the ratty object IDs come first, this is
@@ -118,17 +117,17 @@ MAKE_SYSTEM(render_3d) {
             continue;
         if (!HAS_COMPONENT(id, position))
             continue;
-        struct Origin *o = &GET_COMPONENT(id, origin);
-        struct Position *p = &GET_COMPONENT(id, position);
+        struct Origin & o = &GET_COMPONENT(id, origin);
+        struct Position & p = &GET_COMPONENT(id, position);
         ratUpdatePos(id, o->ox+p->x, o->oy+p->y, o->oz+p->z);
         ratUpdateRot(id, o->rx+p->rx, o->ry+p->ry, o->rz+p->rz);
         //printf("Rendered for %d: %f,%f,%f; %f,%f,%f\n", id, o->x+o->ox+p->x, o->y+o->oy+p->y, o->z+o->oz+p->z, o->rx+p->rx, o->ry+p->ry, o->rz+p->rz);
     }
     ratForce();
     return 0;
-}
+};
 
-int main() {
+i32 (&)() main = ${
     startGame();
     makeSpace();
     INIT_ECS();
@@ -137,12 +136,12 @@ int main() {
            "Controls: WASD for 2D movement, QE for 3D movement, B to quit.\n",
             g_w, g_h, g_pw, g_ph);
     rat_defer_commands = 1;
-    for (unsigned i = 0; i < 64; i++) {
+    for (mut u32 i = 0; i < 64; i++) {
         //ratRegister and ratPlace must be called explicitly, but not ratDelete.
         //ratDelete is handled by the KILL_ENTITY(entity_id) macro.
-        unsigned id = ratRegister("cuteFlower", PATH("flower.glb"), "glb");
-        unsigned x = 3 + (i%16)*3, y = 5 + (i/16)*3;
-        unsigned w = 4, h = 4;
+        u32 id = ratRegister("cuteFlower", PATH("flower.glb"), "glb");
+        u32 x = 3 + (i%16)*3, y = 5 + (i/16)*3;
+        u32 w = 4, h = 4;
         ratPlace(id, x, y, w, h);
 
         ADD_COMPONENTS(id, position, origin);
@@ -160,4 +159,4 @@ int main() {
         sleepM(33);
     }
     endGame();
-}
+};

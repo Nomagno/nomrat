@@ -5,80 +5,81 @@
 // with the Camera control extension,
 // plus some basic necessary ANSI/POSIX terminal handling goodies
 
-#include <sys/ioctl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <unistd.h>
+c_include "sys/ioctl.h"
+c_include "stdio.h"
+c_include "stdlib.h"
+c_include "stdint.h"
+c_include "unistd.h"
 
 #define RAT_OBJ_LIMIT 64
 
-typedef struct {
-    char *name;
-    char *model;
-} EntityOrigin;
+#define String u8 &
 
-EntityOrigin rat_internal_objects[RAT_OBJ_LIMIT];
+struct EntityOrigin {
+    mut String name;
+    mut String model;
+};
+
+mut struct EntityOrigin [RAT_OBJ_LIMIT] rat_internal_objects;
 
 #define NOMRAT_CHECK_ID(_id)\
 if (_id >= RAT_OBJ_LIMIT || rat_internal_objects[_id].model == NULL)\
     { fprintf(stderr, "NomRat Error: Unknown ID %u\n", _id); exit(1); } \
 
-unsigned rat_internal_w=1, rat_internal_h=1; // Width, height in characters
-unsigned rat_internal_pw=1, rat_internal_ph=1; // Width, height in pixels
+mut u32 rat_internal_w=1, rat_internal_h=1; // Width, height in characters
+mut u32 rat_internal_pw=1, rat_internal_ph=1; // Width, height in pixels
 
 
 // Can be set to 1 in order to not force flush. reset when ratForce() is called.
-_Bool rat_defer_commands = 0;
+mut bool rat_defer_commands = 0;
 
-void rat_internal_pre() { printf("\x1b_ratty;g;"); }
-void rat_internal_post() { printf("\x1b\\"); if (!rat_defer_commands) fflush(stdout); }
+void (&)(void) rat_internal_pre = ${ printf("\x1b_ratty;g;"); };
+void (&)(void) rat_internal_post = ${ printf("\x1b\\"); if (!rat_defer_commands) fflush(stdout); };
 
 // Stores the terminal width in columns into w,
 // and the height in rows into h.
 // Stores the terminal width and height in pixels into pw and ph.
 // It is recommended to call this at program startup
 // for the internal nomrat terminal dimenstions to be filled in.
-void ratGetWH(unsigned *w, unsigned *h, unsigned *pw, unsigned *ph) {
+void (&)(u32 mut & w, u32 mut & h, u32 mut & pw, u32 mut & ph) ratGetWH = ${
     struct winsize wi;
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &wi) != 0) {
         fprintf(stderr, "NomRat Error: Can't get terminal and window size\n");
         exit(1);
     }
-    *w = wi.ws_col;
-    *h = wi.ws_row;
-    *pw = wi.ws_xpixel;
-    *ph = wi.ws_ypixel;
-    rat_internal_w = *w;
-    rat_internal_h = *h;
-    rat_internal_pw = *pw;
-    rat_internal_ph = *ph;
-}
+    ^w = wi.ws_col;
+    ^h = wi.ws_row;
+    ^pw = wi.ws_xpixel;
+    ^ph = wi.ws_ypixel;
+    rat_internal_w = ^w;
+    rat_internal_h = ^h;
+    rat_internal_pw = ^pw;
+    rat_internal_ph = ^ph;
+};
 
 // Deletes ALL objects
-void ratClearObjects(void) {
-    for (unsigned i = 0; i < RAT_OBJ_LIMIT; i++) {
-        rat_internal_objects[i].name = NULL;
-        rat_internal_objects[i].model = NULL;
+void (&)(void) ratClearObjects = ${
+    for (mut u32 i = 0; i < RAT_OBJ_LIMIT; i++) {
+        rat_internal_objects[i] = <struct EntityOrigin>{ NULL, NULL };
     }
     rat_internal_pre();
     printf("d");
     rat_internal_post();
-}
+};
 
 // Clears screen (text)
-void ratClearText(void) { printf("\x1b[2J"); if (!rat_defer_commands) fflush(stdout); }
+void (&)(void) ratClearText = ${ printf("\x1b[2J"); if (!rat_defer_commands) fflush(stdout); };
 
 // Sets cursor position
-void ratSetXY(unsigned x, unsigned y) { printf("\x1b[%u;%uH", y, x); if (!rat_defer_commands) fflush(stdout); }
+void (&)(u32 x, u32 y) ratSetXY = ${ printf("\x1b[%u;%uH", y, x); if (!rat_defer_commands) fflush(stdout); };
 
 // Registers object with path (path relative to ratty's assets/objects/ folder, absolute paths not supported)
 // and where format is one of "obj", "glb".
 // Returns the integer handle (ID) of the object for use with the rest of commands
-unsigned ratRegister(char *name, char *path, char *fmt) {
-    _Bool obj_limit_reached = 1;
-    unsigned retval = 0;
-    for (unsigned i = 0; i < RAT_OBJ_LIMIT; i++) {
+u32 (&)(String name, String path, String fmt) ratRegister = ${
+    mut bool obj_limit_reached = 1;
+    mut u32 retval = 0;
+    for (mut u32 i = 0; i < RAT_OBJ_LIMIT; i++) {
         if (rat_internal_objects[i].model == NULL) {
             rat_internal_objects[i].name = name;
             rat_internal_objects[i].model = path;
@@ -95,18 +96,18 @@ unsigned ratRegister(char *name, char *path, char *fmt) {
     printf("r;id=%u;fmt=%s;path=%s", retval, fmt, path);
     rat_internal_post();
     return retval;
-}
+};
+
 
 // Places object at position x,y with size w,h
-void ratPlace(unsigned id, unsigned x, unsigned y, unsigned w, unsigned h) {
+void (&)(u32 id, u32 x, u32 y, u32 w, u32 h) ratPlace = ${
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
     printf("p;id=%u;row=%u;col=%u;w=%u;h=%u", id, y, x, w, h);
     rat_internal_post();
-}
+};
 
-// Deletes object
-void ratDelete(signed id) {
+void (&)(i32 id) ratDelete = ${
     if (id < 0) {
         fprintf(stderr, "NomRat Error: Can't delete object with negative ID %d\n", id);
         exit(1);
@@ -119,146 +120,116 @@ void ratDelete(signed id) {
     rat_internal_pre();
     printf("d;id=%u", id);
     rat_internal_post();
-}
+};
 
 // Forces all accumulated commands to be sent
-void ratForce(void) {
+void (&) (void) ratForce = ${
     rat_defer_commands = 0;
     fflush(stdout);
-}
+};
 
 // Updates position OFFSET of object. That is, the offset from its original position
 // XY: in columns/rows
 // Z: custom unit, seemingly 1 Y-axis unit is roughly equal to 5 Z-axis units with the default font at fullscreen 1080p
-void ratUpdatePos(unsigned id, float px, float py, float pz) {
+void (&)(u32 id, f32 px, f32 py, f32 pz) ratUpdatePos = ${
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
     printf("u;id=%u;px=%f;py=%f;pz=%f", id, px/rat_internal_w, py/rat_internal_h, pz);
     rat_internal_post();
-}
+};
 
 // Updates position of object, integer xy plane version for terminal-style jagged movement
-void ratUpdateSimple(unsigned id, signed px, signed py) {
+void (&)(u32 id, i32 px, i32 py) ratUpdateSimple = ${
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
-    printf("u;id=%u;px=%f;py=%f", id, ((float)px)/rat_internal_w, ((float)py)/rat_internal_h);
+    printf("u;id=%u;px=%f;py=%f", id, (<f32>px)/rat_internal_w, (<f32>py)/rat_internal_h);
     rat_internal_post();
-}
+};
 
-// Updates position of object, float xy plane version for smooth movement
-void ratUpdateSimpleF(unsigned id, float px, float py) {
+// Updates position of object, f32 xy plane version for smooth movement
+void (&)(u32 id, f32 px, f32 py) ratUpdateSimpleF = ${
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
-    printf("u;id=%u;px=%f;py=%f", id, px/(float)rat_internal_w, py/(float)rat_internal_h);
+    printf("u;id=%u;px=%f;py=%f", id, px/<f32>rat_internal_w, py/<f32>rat_internal_h);
     rat_internal_post();
-}
+};
 
 // Updates depth offset of object
-void ratUpdateZ(unsigned id, float pz) {
+void (&)(u32 id, f32 pz) ratUpdateZ = ${
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
     printf("u;id=%u;pz=%f", id, pz);
     rat_internal_post();
-}
+};
 
 // Updates rotation of object, where the rotation is in degrees
-void ratUpdateRot(unsigned id, float rx, float ry, float rz) {
+void (&)(u32 id, f32 rx, f32 ry, f32 rz) ratUpdateRot = ${
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
     printf("u;id=%u;rx=%f;ry=%f;rz=%f", id, rx, ry, rz);
     rat_internal_post();
-}
+};
 
 // Updates scale of object
-void ratUpdateScale(unsigned id, float sx, float sy, float sz) {
+void (&)(u32 id, f32 sx, f32 sy, f32 sz) ratUpdateScale = ${
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
     printf("u;id=%u;sx=%f;sy=%f;sz=%f", id, sx, sy, sz);
     rat_internal_post();
-}
+};
 
 // Updates the color (in format 0xRRGGBB) and the brightnes [0.0,1.0] of the object
-void ratUpdateColorBrightness(unsigned id, uint32_t c, float brightness) {
+void (&)(u32 id, u32 c, f32 brightness) ratUpdateColorBrightness = ${
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
-    c = c & 0x00FFFFFF; /*Only lower 24 bits used*/
-    printf("u;id=%u;color=%.6x;brightness=%f", id, c, brightness);
+    printf("u;id=%u;color=%.6x;brightness=%f", id, c and 0x00FFFFFF /*Only lower 24 bits used*/, brightness);
     rat_internal_post();
-}
+};
 
 // Updates the depth offset
-void ratUpdateDepth(unsigned id, float depth) {
+void (&)(u32 id, f32 depth) ratUpdateDepth = ${
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
     printf("u;id=%u;depth=%f", id, depth);
     rat_internal_post();
-}
+};
 
 // Changes the selected camera slot's offset to the center of the terminal plane
 // In the case of Flat mode, it's ignored
-void ratCameraPos(unsigned id, float px, float py, float pz) {
+void (&)(u32 id, f32 px, f32 py, f32 pz) ratCameraPos = ${
     rat_internal_pre();
     printf("c;id=%u;px=%f;py=%f;pz=%f", id, px, py, pz);
     rat_internal_post();
-}
+};
 
 // Changes the selected camera slot's rotation. ry currently ignored as only pitch and yaw are supported, not roll
 // In the case of Flat mode, it's ignored
-void ratCameraRot(unsigned id, float rx, float ry, float rz) {
+void (&)(u32 id, f32 rx, f32 ry, f32 rz) ratCameraRot = ${
     rat_internal_pre();
     printf("c;id=%u;rx=%f;ry=%f;rz=%f", id, rx, ry, rz);
     rat_internal_post();
-}
+};
 
 // In the case of Ortho/Mobius mode, changes the zoom.
 // In the case of Persp mode, changes the FOV.
 // In the case of Flat mode, it's ignored
-void ratCameraScale(unsigned id, float scale) {
+void (&)(u32 id, f32 scale) ratCameraScale = ${
     rat_internal_pre();
     printf("c;id=%u;scale=%f", id, scale);
     rat_internal_post();
-}
+};
 
 // Sets the camera type, where type is one of: Flat, Ortho, Persp, Mobius
-void ratCameraType(unsigned id, char *type) {
+void (&)(u32 id, String type) ratCameraType = ${
     rat_internal_pre();
     printf("c;id=%u;type=%s", id, type);
     rat_internal_post();
-}
+};
 
 // Instantly copies the current camera slot's settings to Ratty's current camera settings.
-void ratCameraSet(unsigned id) {
+void (&)(u32 id) ratCameraSet = ${
     rat_internal_pre();
     printf("c;id=%u;set=1", id);
     rat_internal_post();
-}
-
-/*
-// Feature not in mainline ratty yet
-// Updates the clipping plane and enables clipping
-void ratUpdateClipping(unsigned id, unsigned x, unsigned y, unsigned w, unsigned h) {
-    NOMRAT_CHECK_ID(id);
-    rat_internal_pre();
-    printf("u;id=%u;clip=1;clip_row=%u;clip_col=%u;clip_w=%u;clip_h=%u", id, x, y, w, h);
-    rat_internal_post();
-}
-// Feature not in mainline ratty yet
-// Disables clipping
-void ratUpdateNoClip(unsigned id) {
-    NOMRAT_CHECK_ID(id);
-    rat_internal_pre();
-    printf("u;id=%u;clip=0", id);
-    rat_internal_post();
-}
-
-// Feature idea not implemented in ratty for now
-// Make object tied to the current terminal row,column of
-// its anchor instead of to the terminal cell itself
-void raUpdatePersistent(unsigned id, _Bool persistent) {
-    NOMRAT_CHECK_ID(id);
-    rat_internal_pre();
-    printf("u;id=%u;persistent=%u", persistent);
-    rat_internal_post();
-}
-*/
+};
 #endif

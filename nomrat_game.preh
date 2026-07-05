@@ -1,9 +1,8 @@
 #ifndef _NOMRAT_GAME_H
 #define _NOMRAT_GAME_H
 
-#include <stdint.h>
-#define SIBLINGS_T uint64_t
-#define COMPONENT_PRELUDE signed id; SIBLINGS_T siblings;
+#define SIBLINGS_T u64
+#define COMPONENT_PRELUDE mut i32 id; mut SIBLINGS_T siblings;
 #define ENTITY_LIMIT ((1<<15) - 1)
 
 // In non-load mode, we undefine this so the header can be included again.
@@ -15,49 +14,49 @@
 // Auxiliary single header library for making games with
 // nomrat.h, see test.c for example usage
 
-#include <time.h>
-#include <termios.h>
-#include <fcntl.h>
-#include <assert.h>
-#include "nomrat.h"
+c_include "time.h"
+c_include "termios.h"
+c_include "fcntl.h"
+c_include "assert.h"
+#include "nomrat.preh"
 
-void sleepM(unsigned ms) {
-    struct timespec ts;
+void (&)(u32 ms) sleepM = ${
+    mut struct timespec ts;
     ts.tv_sec = ms/1000;
     ts.tv_nsec = (ms%1000)*1000000;
     nanosleep(&ts, NULL);
-}
+};
 
-void setRawMode(_Bool enable) {
-    struct termios old, new;
+void (&)(bool enable) setRawMode = ${
+    mut struct termios old, new;
 
     tcgetattr(STDIN_FILENO, &old);
     new = old;
 
     if (enable) {
-        new.c_lflag &= ~(ICANON | ECHO);
+        new.c_lflag = new.c_lflag and not (ICANON or ECHO);
     } else {
-        new.c_lflag |= ICANON | ECHO;
+        new.c_lflag = new.c_lflag or (ICANON or ECHO);
     }
 
     tcsetattr(STDIN_FILENO, TCSANOW, &new);
-}
+};
 
-void setNonblockingInput(_Bool enable) {
+void (&)(bool enable) setNonblockingInput = ${
     if (enable) {
-        fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
+        fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) or O_NONBLOCK);
     } else {
-        fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) & (~O_NONBLOCK));
+        fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) and (not O_NONBLOCK));
     }
-}
+};
 
 // Terminal size
-unsigned g_w, g_h;
+mut u32 g_w, g_h;
 // Size in pixels of the terminal
-unsigned g_pw, g_ph;
+mut u32 g_pw, g_ph;
 // visually, Y = ratio*X. If ratio is 2.0 (this is the case in most termials),
 // this means that the Y axis is visually twice as large as the X axis.
-float g_char_ratio;
+mut f32 g_char_ratio;
 
 
 // Double Vertical precision terminal space (DVpts, DV for short):
@@ -73,11 +72,11 @@ float g_char_ratio;
 // All animation and placement functions involving the Y axis take Rts:
 // ratPlace, ratUpdateSimple, ratUpdateSimpleF, and ratUpdatePos.
 
-float g_epsilon = 0.1;
-#define ABS(_x) ((_x < 0) ? -_x : _x)
+mut f32 g_epsilon = 0.1;
+#define ABS(_x) ((_x < 0) ? ~_x : _x)
 #define FEQUAL(_x, _y) (ABS(_x - _y) < g_epsilon)
 
-void startGame(void) {
+void (&)(void) startGame = ${
     setRawMode(1);
     setNonblockingInput(1);
     ratClearObjects();
@@ -85,27 +84,27 @@ void startGame(void) {
     ratSetXY(0, 0);
 
     ratGetWH(&g_w, &g_h, &g_pw, &g_ph);
-    g_char_ratio = (float)(g_ph/g_h)/(float)(g_pw/g_w);
+    g_char_ratio = <f32>(g_ph/g_h)/<f32>(g_pw/g_w);
 
     printf("Ratio: %0.2f\n", g_char_ratio);
     assert(FEQUAL(g_char_ratio, 2.0)
            && "Error: Y axis must be twice the size of X axis to provide consistent visuals");
     ratClearText();
     ratSetXY(0, 0);
-}
+};
 
-void endGame(void) {
+void (&)(void) endGame = ${
     setNonblockingInput(0);
     setRawMode(0);
     ratClearObjects();
     ratClearText();
-}
+};
 
 #define INPUT_BUFFER_SIZE 64
-unsigned char g_read_buffer[INPUT_BUFFER_SIZE];
-unsigned readInput(void) {
+mut u8 [INPUT_BUFFER_SIZE] g_read_buffer;
+u32 (&)(void) readInput = ${
     return fread(g_read_buffer, 1, INPUT_BUFFER_SIZE, stdin);
-}
+};
 
 
 /****************************************************
@@ -124,11 +123,11 @@ See test.c for detailed usage
 #endif
 // The format must be: component_field_1,component_field_2,component_field_3
 
-COMPONENT_LIST_TYPE g_components;
+mut COMPONENT_LIST_TYPE g_components;
 
 #define COMMA ,
 #define SYSTEM(_name) nomrat_game_system_##_name
-#define MAKE_SYSTEM(_name, ...) signed SYSTEM(_name)(__VA_ARGS__)
+#define MAKE_SYSTEM(_name, ...) i32 (&)(__VA_ARGS__) SYSTEM(_name)
 #define CALL_SYSTEM(_name, ...) SYSTEM(_name)(__VA_ARGS__)
 
 // Sibling code FFFF -> no sibling
@@ -150,21 +149,21 @@ COMPONENT_LIST_TYPE g_components;
 // You can ensure all by using the ENTITY_LIMIT macro and and starting all component structs with 'COMPONENT_PRELUDE;'
 
 
-#define HAS_COMPONENT(_id, _comp_name) (g_components._comp_name[_id].id == (signed)_id)
+#define HAS_COMPONENT(_id, _comp_name) (g_components._comp_name[_id].id == <i32>_id)
 #define GET_COMPONENT_N(_id, _comp_name) (HAS_COMPONENT(_id, _comp_name) ? &(g_components._comp_name[_id]) : NULL))
 #define GET_COMPONENT(_id, _comp_name) (g_components._comp_name[_id])
-#define ITERATE_OVER_COMPONENT_LIST(_x) for (unsigned _x = 0; _x < ENTITY_LIMIT; _x++)
+#define ITERATE_OVER_COMPONENT_LIST(_x) for (mut u32 _x = 0; _x < ENTITY_LIMIT; _x++)
 
 #include "map.h"
 
-#define TYPEOF_COMPONENT(_x) typeof(((COMPONENT_LIST_TYPE){0})._x[0])
-#define CLEAR_COMPONENT(_comp_name, _id) g_components._comp_name[_id] = (TYPEOF_COMPONENT(_comp_name)){0};\
-                                   g_components._comp_name[_id].id = -1;\
+#define TYPEOF_COMPONENT(_x) typeof((<COMPONENT_LIST_TYPE>{0})._x[0])
+#define CLEAR_COMPONENT(_comp_name, _id) g_components._comp_name[_id] = <TYPEOF_COMPONENT(_comp_name)>{0};\
+                                   g_components._comp_name[_id].id = ~1;\
                                    g_components._comp_name[_id].siblings = 0xFFFFFFFFFFFFFFFF;
 #define KILL_ENTITY(_id)\
     if IS_3D(_id) { ratDelete(_id); }  MAP_UD(CLEAR_COMPONENT, _id, COMPONENT_LIST_FIELDS)
 #define INIT_ECS()\
-    for(unsigned id = 0; id < ENTITY_LIMIT; id++) { MAP_UD(CLEAR_COMPONENT, id, COMPONENT_LIST_FIELDS); }
+    for(mut u32 id = 0; id < ENTITY_LIMIT; id++) { MAP_UD(CLEAR_COMPONENT, id, COMPONENT_LIST_FIELDS); }
 #define ADD_COMPONENT(_comp_name, _id) CLEAR_COMPONENT(_comp_name, id);\
                                        g_components._comp_name[_id].id = _id;
 #define ADD_COMPONENTS(_id, ...) MAP_UD(ADD_COMPONENT, _id, __VA_ARGS__);
