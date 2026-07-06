@@ -182,7 +182,7 @@ void (&)(u32 id, f32 sx, f32 sy, f32 sz) ratUpdateScale = ${
 void (&)(u32 id, u32 c, f32 brightness) ratUpdateColorBrightness = ${
     NOMRAT_CHECK_ID(id);
     rat_internal_pre();
-    printf("u;id=%u;color=%.6x;brightness=%f", id, c and 0x00FFFFFF /*Only lower 24 bits used*/, brightness);
+    printf("u;id=%u;color=%.6x;brightness=%f", id, c band 0x00FFFFFF /*Only lower 24 bits used*/, brightness);
     rat_internal_post();
 };
 

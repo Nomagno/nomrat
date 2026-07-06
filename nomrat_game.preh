@@ -34,9 +34,9 @@ void (&)(bool enable) setRawMode = ${
     new = old;
 
     if (enable) {
-        new.c_lflag = new.c_lflag and not (ICANON or ECHO);
+        new.c_lflag = new.c_lflag band bnot (ICANON bor ECHO);
     } else {
-        new.c_lflag = new.c_lflag or (ICANON or ECHO);
+        new.c_lflag = new.c_lflag bor (ICANON bor ECHO);
     }
 
     tcsetattr(STDIN_FILENO, TCSANOW, &new);
@@ -44,9 +44,9 @@ void (&)(bool enable) setRawMode = ${
 
 void (&)(bool enable) setNonblockingInput = ${
     if (enable) {
-        fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) or O_NONBLOCK);
+        fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) bor O_NONBLOCK);
     } else {
-        fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) and (not O_NONBLOCK));
+        fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) band (bnot O_NONBLOCK));
     }
 };
 
