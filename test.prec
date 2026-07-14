@@ -44,8 +44,8 @@ u32 (&)(void) getInput = ${
 };
 
 void (&)(void) makeSpace = ${
-    for (mut u32 i = 0; i < g_h; i++) {
-        for (mut u32 j = 0; j < g_w; j++) {
+    for (mut u32 i = 0; i < g_h; i=i+1) {
+        for (mut u32 j = 0; j < g_w; j=j+1) {
             printf(" ");
         }
         printf("\n");
@@ -136,7 +136,7 @@ i32 (&)() main = ${
            "Controls: WASD for 2D movement, QE for 3D movement, B to quit.\n",
             g_w, g_h, g_pw, g_ph);
     rat_defer_commands = 1;
-    for (mut u32 i = 0; i < 64; i++) {
+    for (mut u32 i = 0; i < 64; i=i+1) {
         //ratRegister and ratPlace must be called explicitly, but not ratDelete.
         //ratDelete is handled by the KILL_ENTITY(entity_id) macro.
         u32 id = ratRegister("cuteFlower", PATH("flower.glb"), "glb");
