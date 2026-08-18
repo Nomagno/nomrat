@@ -61,31 +61,26 @@ MAKE_SYSTEM(handle_input) = ${
             continue;
 
         struct Position mut & p = &GET_COMPONENT(id, position);
+        // PreC has auto-fallthrough, and needs braces for more than one statement in a switch arm.
+        // Use 'fall;' after the single statement/braces to manually perform fall-through 
         switch(input) {
         case 'a':
             p->x = p->x - 1;
-            break;
         case 'd':
             p->x = p->x + 1;
-            break;
         case 'w':
             p->y = p->y + 1;
-            break;
         case 's':
             p->y = p->y - 1;
-            break;
         case 'q':
             p->z = p->z - 5;
-            break;
         case 'e':
             p->z = p->z + 5;
-            break;
-        case 'b':
+        case 'b': {
             global_game_active = 0;
             continue;
-            break;
-        default:
-            break;
+        }
+        default: { /*do nothing*/ }
         }
     }
     return 0;
