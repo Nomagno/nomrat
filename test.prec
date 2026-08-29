@@ -5,20 +5,20 @@ c_include "math.h"
 
 // Helper mode
 #include "nomrat_game.preh"
-struct Position {
+type struct Position = {
     COMPONENT_PRELUDE;
     f32 x, y, z;
     f32 rx, ry, rz;
 };
 
-struct Origin {
+type struct Origin = {
     COMPONENT_PRELUDE;
     u32 x, y, z;
     f32 ox, oy, oz;
     f32 rx, ry, rz;
 };
 
-struct Components {
+type struct Components = {
     struct Position [ENTITY_LIMIT] position;
     struct Origin [ENTITY_LIMIT] origin;
 };

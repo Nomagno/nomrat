@@ -15,7 +15,7 @@ c_include "unistd.h"
 
 #define String u8 &
 
-struct EntityOrigin {
+type struct EntityOrigin = {
     String name;
     String model;
 };
@@ -220,9 +220,9 @@ void (&)(u32 id, f32 scale) ratCameraScale = ${
 };
 
 // Sets the camera type, where type is one of: Flat, Ortho, Persp, Mobius
-void (&)(u32 id, String type) ratCameraType = ${
+void (&)(u32 id, String t) ratCameraType = ${
     rat_internal_pre();
-    printf("c;id=%u;type=%s", id, type);
+    printf("c;id=%u;type=%s", id, t);
     rat_internal_post();
 };
 
