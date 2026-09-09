@@ -152,7 +152,7 @@ mut COMPONENT_LIST_TYPE g_components;
 #define HAS_COMPONENT(_id, _comp_name) (g_components._comp_name[_id].id == <i32>_id)
 #define GET_COMPONENT_N(_id, _comp_name) (HAS_COMPONENT(_id, _comp_name) ? &(g_components._comp_name[_id]) : NULL))
 #define GET_COMPONENT(_id, _comp_name) (g_components._comp_name[_id])
-#define ITERATE_OVER_COMPONENT_LIST(_x) for (mut u32 _x = 0; _x < ENTITY_LIMIT; _x=_x+1)
+#define ITERATE_OVER_COMPONENT_LIST(_x) for (mut u32 _x = 0; _x < ENTITY_LIMIT; _x+=1)
 
 #include "map.h"
 
@@ -163,7 +163,7 @@ mut COMPONENT_LIST_TYPE g_components;
 #define KILL_ENTITY(_id)\
     if IS_3D(_id) { ratDelete(_id); }  MAP_UD(CLEAR_COMPONENT, _id, COMPONENT_LIST_FIELDS)
 #define INIT_ECS()\
-    for(mut u32 id = 0; id < ENTITY_LIMIT; id=id+1) { MAP_UD(CLEAR_COMPONENT, id, COMPONENT_LIST_FIELDS); }
+    for(mut u32 id = 0; id < ENTITY_LIMIT; id+=1) { MAP_UD(CLEAR_COMPONENT, id, COMPONENT_LIST_FIELDS); }
 #define ADD_COMPONENT(_comp_name, _id) CLEAR_COMPONENT(_comp_name, id);\
                                        g_components._comp_name[_id].id = _id;
 #define ADD_COMPONENTS(_id, ...) MAP_UD(ADD_COMPONENT, _id, __VA_ARGS__);

@@ -44,8 +44,8 @@ u32 (&)(void) getInput = ${
 };
 
 void (&)(void) makeSpace = ${
-    for (mut u32 i = 0; i < g_h; i=i+1) {
-        for (mut u32 j = 0; j < g_w; j=j+1) {
+    for (mut u32 i = 0; i < g_h; i+=1) {
+        for (mut u32 j = 0; j < g_w; j+=1) {
             printf(" ");
         }
         printf("\n");
@@ -65,17 +65,17 @@ MAKE_SYSTEM(handle_input) = ${
         // Use 'fall;' after the single statement/braces to manually perform fall-through 
         switch(input) {
         case 'a':
-            p->x = p->x - 1;
+            p->x += ~1;
         case 'd':
-            p->x = p->x + 1;
+            p->x += 1;
         case 'w':
-            p->y = p->y + 1;
+            p->y += 1;
         case 's':
-            p->y = p->y - 1;
+            p->y += ~1;
         case 'q':
-            p->z = p->z - 5;
+            p->z += ~5;
         case 'e':
-            p->z = p->z + 5;
+            p->z += 5;
         case 'b': {
             global_game_active = 0;
             continue;
@@ -95,7 +95,7 @@ MAKE_SYSTEM(animate_spin) = ${
         if (!HAS_COMPONENT(id, position))
             continue;
         f32 mut & ry = &GET_COMPONENT(id, position).ry;
-        ^ry = ^ry + 15;
+        ^ry += 15;
         ^ry = fmod(^ry, 360);
     }
     return 0;
@@ -131,7 +131,7 @@ i32 (&)() main = ${
            "Controls: WASD for 2D movement, QE for 3D movement, B to quit.\n",
             g_w, g_h, g_pw, g_ph);
     rat_defer_commands = 1;
-    for (mut u32 i = 0; i < 64; i=i+1) {
+    for (mut u32 i = 0; i < 64; i+=1) {
         //ratRegister and ratPlace must be called explicitly, but not ratDelete.
         //ratDelete is handled by the KILL_ENTITY(entity_id) macro.
         u32 id = ratRegister("cuteFlower", PATH("flower.glb"), "glb");

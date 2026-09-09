@@ -59,7 +59,7 @@ void (&)(u32 mut & w, u32 mut & h, u32 mut & pw, u32 mut & ph) ratGetWH = ${
 
 // Deletes ALL objects
 void (&)(void) ratClearObjects = ${
-    for (mut u32 i = 0; i < RAT_OBJ_LIMIT; i=i+1) {
+    for (mut u32 i = 0; i < RAT_OBJ_LIMIT; i+=1) {
         rat_internal_objects[i] = <struct EntityOrigin>{ NULL, NULL };
     }
     rat_internal_pre();
@@ -79,7 +79,7 @@ void (&)(u32 x, u32 y) ratSetXY = ${ printf("\x1b[%u;%uH", y, x); if (!rat_defer
 u32 (&)(String name, String path, String fmt) ratRegister = ${
     mut bool obj_limit_reached = 1;
     mut u32 retval = 0;
-    for (mut u32 i = 0; i < RAT_OBJ_LIMIT; i=i+1) {
+    for (mut u32 i = 0; i < RAT_OBJ_LIMIT; i+=1) {
         if (rat_internal_objects[i].model == NULL) {
             rat_internal_objects[i].name = name;
             rat_internal_objects[i].model = path;
